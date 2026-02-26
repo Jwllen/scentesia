@@ -1,0 +1,115 @@
+'use client'
+
+import { useRef, useCallback, type ReactNode } from 'react'
+
+interface TiltCardProps {
+  children: ReactNode
+  className?: string
+  onClick?: () => void
+  maxTilt?: number
+}
+
+export function TiltCard({ children, className = '', onClick, maxTilt = 10 }: TiltCardProps) {
+  const cardRef   = useRef<HTMLDivElement>(null)
+  const shineRef  = useRef<HTMLDivElement>(null)
+  const borderRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el     = cardRef.current
+    const shine  = shineRef.current
+    const border = borderRef.current
+    if (!el) return
+
+    const rect = el.getBoundingClientRect()
+    const cx   = (e.clientX - rect.left)  / rect.width   // 0 → 1
+    const cy   = (e.clientY - rect.top)   / rect.height   // 0 → 1
+
+    const rotX = -(cy - 0.5) * maxTilt * 2
+    const rotY =  (cx - 0.5) * maxTilt * 2
+
+    el.style.transform  = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(1.025, 1.025, 1.025)`
+    el.style.transition = 'transform 0.06s linear'
+    el.style.zIndex     = '2'
+
+    if (shine) {
+      const base = 50 - (rotY / maxTilt) * 30
+      const p0 = Math.max(0,   base - 48)
+      const p1 = Math.max(0,   base - 22)
+      const p2 =               base - 3
+      const p3 =               base + 3
+      const p4 = Math.min(100, base + 22)
+      const p5 = Math.min(100, base + 48)
+
+      const streak = `linear-gradient(135deg, transparent ${p0}%, rgba(255,255,255,0.015) ${p1}%, rgba(255,255,255,0.09) ${p2}%, rgba(255,255,255,0.09) ${p3}%, rgba(255,255,255,0.015) ${p4}%, transparent ${p5}%)`
+      const e1     = `radial-gradient(ellipse 20% 14% at ${base - 3}% 24%, rgba(255,255,255,0.04) 0%, transparent 100%)`
+      const e2     = `radial-gradient(ellipse 24% 12% at ${base + 2}% 54%, rgba(255,255,255,0.03) 0%, transparent 100%)`
+      const e3     = `radial-gradient(ellipse 16% 10% at ${base - 1}% 78%, rgba(255,255,255,0.035) 0%, transparent 100%)`
+
+      shine.style.background = [streak, e1, e2, e3].join(', ')
+      shine.style.opacity    = '1'
+      shine.style.transition = 'opacity 0.06s linear'
+    }
+
+    if (border) {
+      // Glow follows cursor position around the border
+      border.style.background = `radial-gradient(circle at ${cx * 100}% ${cy * 100}%, rgba(255,255,255,0.28) 0%, transparent 55%)`
+      border.style.opacity    = '1'
+      border.style.transition = 'opacity 0.06s linear'
+    }
+  }, [maxTilt])
+
+  const handleMouseLeave = useCallback(() => {
+    const el     = cardRef.current
+    const shine  = shineRef.current
+    const border = borderRef.current
+    if (!el) return
+
+    el.style.transform  = 'perspective(800px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)'
+    el.style.transition = 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)'
+    el.style.zIndex     = ''
+
+    if (shine) {
+      shine.style.opacity    = '0'
+      shine.style.transition = 'opacity 0.35s ease'
+    }
+
+    if (border) {
+      border.style.opacity    = '0'
+      border.style.transition = 'opacity 0.4s ease'
+    }
+  }, [])
+
+  return (
+    <div
+      ref={cardRef}
+      className={`relative overflow-hidden cursor-pointer ${className}`}
+      style={{ willChange: 'transform' }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+    >
+      {children}
+
+      {/* Specular sheen */}
+      <div
+        ref={shineRef}
+        className="absolute inset-0 pointer-events-none"
+        style={{ opacity: 0, zIndex: 10 }}
+      />
+
+      {/* Border glow — radial gradient masked to the 1px border strip only */}
+      <div
+        ref={borderRef}
+        className="absolute inset-0 pointer-events-none rounded-[inherit]"
+        style={{
+          opacity: 0,
+          zIndex: 20,
+          padding: '1px',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+        }}
+      />
+    </div>
+  )
+}
