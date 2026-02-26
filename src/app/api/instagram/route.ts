@@ -63,7 +63,7 @@ function extractFromCarouselJson(html: string): string[] {
   const urls: string[] = []
 
   // URLs in the script JSON have escaped forward slashes: https:\/\/...
-  const urlPattern = /"url"\s*:\s*"(https:\\/\\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
+  const urlPattern = /"url"\s*:\s*"(https:\\\/\\\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
   let m: RegExpExecArray | null
   while ((m = urlPattern.exec(chunk)) !== null) {
     const decoded = decodeJsonUrl(m[1])
