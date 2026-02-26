@@ -472,6 +472,149 @@ export default function BuildPage() {
         </div>
       )}
 
+      {activeTab === 'instagram' && (
+        <div className="pt-5 px-6">
+          {/* URL input row — hidden once images are loaded */}
+          {instagramImages.length === 0 && (
+            <div className="flex gap-3 mb-5">
+              <input
+                type="url"
+                value={instagramUrl}
+                onChange={e => setInstagramUrl(e.target.value)}
+                onPaste={e => {
+                  e.preventDefault()
+                  const pasted = e.clipboardData.getData('text')
+                  setInstagramUrl(pasted)
+                  if (isValidInstagramUrl(pasted)) {
+                    handleInstagramImport(pasted)
+                  }
+                }}
+                onKeyDown={e => e.key === 'Enter' && handleInstagramImport()}
+                placeholder="Paste an Instagram post or reel URL"
+                className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-white/35 transition-colors rounded-xl"
+                style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+              />
+              <button
+                onClick={() => handleInstagramImport()}
+                disabled={!isValidInstagramUrl(instagramUrl) || instagramLoading}
+                className="text-[9px] tracking-[0.25em] uppercase border border-white/15 px-5 py-2.5 rounded-xl text-white/50 hover:border-white/40 hover:text-white/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+                style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+              >
+                {instagramLoading ? '···' : 'Import'}
+              </button>
+            </div>
+          )}
+
+          {/* Error */}
+          {instagramError && (
+            <p
+              className="text-white/35 text-xs mb-5"
+              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+            >
+              {instagramError}
+            </p>
+          )}
+
+          {/* Single post — non-interactive preview */}
+          {instagramType === 'single' && instagramImages.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p
+                  className="text-white/25 text-[9px] tracking-[0.35em] uppercase"
+                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                >
+                  Post imported
+                </p>
+                <button
+                  onClick={() => {
+                    setInstagramImages([])
+                    setInstagramType(null)
+                    setInstagramUrl('')
+                    setInstagramError(null)
+                  }}
+                  className="text-white/25 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
+                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                >
+                  ✕ Clear
+                </button>
+              </div>
+              <div className="w-40 aspect-[4/3] rounded-xl overflow-hidden">
+                <img
+                  src={instagramImages[0].url}
+                  alt=""
+                  className="w-full h-full object-cover animate-fade-in"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Carousel — selection grid */}
+          {instagramType === 'carousel' && instagramImages.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p
+                  className="text-white/25 text-[9px] tracking-[0.35em] uppercase"
+                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                >
+                  {selected.length}/{Math.min(instagramImages.length, MAX_IMAGES)} selected
+                </p>
+                <button
+                  onClick={() => {
+                    setInstagramImages([])
+                    setInstagramType(null)
+                    setInstagramUrl('')
+                    setInstagramError(null)
+                    setSelected([])
+                  }}
+                  className="text-white/25 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
+                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                >
+                  ✕ Clear
+                </button>
+              </div>
+              <div className="vibe-grid -mx-6">
+                {instagramImages.map((img, index) => {
+                  const isSelected = selected.includes(img.id)
+                  const isDisabled = !isSelected && selected.length >= MAX_IMAGES
+                  return (
+                    <button
+                      key={img.id}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelected(prev => prev.filter(s => s !== img.id))
+                        } else if (!isDisabled) {
+                          setSelected(prev => [...prev, img.id])
+                        }
+                      }}
+                      disabled={isDisabled}
+                      className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${
+                        isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'
+                      }`}
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    >
+                      <img
+                        src={img.url}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 animate-fade-in"
+                      />
+                      <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
+                      {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
+                          <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
+                            <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/95 backdrop-blur-sm border-t border-white/8">
         <button
