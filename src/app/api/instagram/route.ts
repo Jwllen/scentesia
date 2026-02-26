@@ -64,22 +64,29 @@ function extractCdnImages(html: string): string[] {
   // Primary: find each CDN src= attribute, then look backwards to the opening
   // <img tag and check whether draggable="false" appears in that tag.
   // Instagram marks profile pics and grid thumbnails with draggable="false";
-  // carousel slides are NOT draggable. Stop at the first draggable CDN image.
-  // IMPORTANT: draggable check must happen BEFORE size filtering — the "More posts"
-  // section uses s150x150 thumbnails (filtered by isValidPostUrl) which would otherwise
-  // be silently skipped via `continue`, letting a second non-draggable cluster through.
+  // carousel slides are NOT draggable. Stop at the first draggable post-type image.
+  //
+  // Order matters:
+  //   1. Filter to post-type URLs (t51.x-15) first — profile avatars (t51.2-19),
+  //      JS bundles, and external media use different path tokens and must be skipped
+  //      entirely; their draggable="false" must NOT trigger the boundary stop.
+  //   2. Then check draggable — within the post-type set, draggable="false" signals
+  //      the boundary (thumbnails, "More posts" grid). These may be small (s150x150)
+  //      so the draggable check must come before the size filter.
   const srcRegex = /\bsrc="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
   let m: RegExpExecArray | null
   while ((m = srcRegex.exec(html)) !== null) {
+    // Skip non-post-type CDN URLs (profile pics, bundles, external media)
+    if (!/\/t51\.\d+-15\//.test(m[1])) continue
     // Look back up to 2000 chars for the opening <img tag
     const searchStart = Math.max(0, m.index - 2000)
     const before = html.slice(searchStart, m.index)
     const imgStart = before.lastIndexOf('<img')
     if (imgStart === -1) continue  // not an img tag (could be <meta src=... — rare)
     const tagFragment = before.slice(imgStart)
-    if (tagFragment.includes('draggable="false"')) break  // hit profile/thumbnail boundary
+    if (tagFragment.includes('draggable="false"')) break  // boundary: draggable post-type img
     const url = isValidPostUrl(m[1])
-    if (!url) continue
+    if (!url) continue  // filtered (static CDN, small thumbnail, etc.)
     addUrl(url)
   }
 
