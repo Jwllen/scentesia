@@ -556,7 +556,7 @@ export default function BuildPage() {
                   className="text-white/25 text-[9px] tracking-[0.35em] uppercase"
                   style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
                 >
-                  {selected.length}/{Math.min(instagramImages.length, MAX_IMAGES)} selected
+                  {selected.length}/{Math.min(instagramImages.length, MAX_IMAGES - uploadedImages.length)} selected
                 </p>
                 <button
                   onClick={() => {
@@ -575,7 +575,7 @@ export default function BuildPage() {
               <div className="vibe-grid -mx-6">
                 {instagramImages.map((img, index) => {
                   const isSelected = selected.includes(img.id)
-                  const isDisabled = !isSelected && selected.length >= MAX_IMAGES
+                  const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
                   return (
                     <button
                       key={img.id}
