@@ -27,6 +27,17 @@ const CURATED_IMAGES = [
 
 const MAX_IMAGES = 5
 
+function isValidPinterestUrl(url: string): boolean {
+  try {
+    const u = new URL(url.trim())
+    if (!u.hostname.includes('pinterest')) return false
+    const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean)
+    return parts.length >= 2
+  } catch {
+    return false
+  }
+}
+
 export default function BuildPage() {
   const router = useRouter()
   const { spray } = useMist()
@@ -37,6 +48,10 @@ export default function BuildPage() {
   const [loadingText, setLoadingText] = useState('Reading your vibe...')
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'curated' | 'pinterest'>('curated')
+  const [pinterestUrl, setPinterestUrl] = useState('')
+  const [pinterestImages, setPinterestImages] = useState<{ id: string; url: string }[]>([])
+  const [pinterestLoading, setPinterestLoading] = useState(false)
+  const [pinterestError, setPinterestError] = useState<string | null>(null)
 
   const totalSelected = selected.length + uploadedImages.length
 
@@ -82,7 +97,15 @@ export default function BuildPage() {
     const interval = setInterval(() => { i = (i + 1) % texts.length; setLoadingText(texts[i]) }, 2500)
 
     try {
-      const curatedUrls = selected.map(id => CURATED_IMAGES.find(c => c.id === id)!.url)
+      const curatedUrls = selected
+        .map(id => {
+          const curated = CURATED_IMAGES.find(c => c.id === id)
+          if (curated) return curated.url
+          const pin = pinterestImages.find(p => p.id === id)
+          if (pin) return pin.url
+          return null
+        })
+        .filter((u): u is string => u !== null)
       const uploadedBase64 = uploadedImages.map(img => img.base64)
       const allImages = [...uploadedBase64, ...curatedUrls]
 
@@ -117,6 +140,24 @@ export default function BuildPage() {
       setLoading(false)
     } finally {
       clearInterval(interval)
+    }
+  }
+
+  async function handlePinterestImport() {
+    if (!isValidPinterestUrl(pinterestUrl)) return
+    setPinterestLoading(true)
+    setPinterestError(null)
+    setPinterestImages([])
+
+    try {
+      const res = await fetch(`/api/pinterest?url=${encodeURIComponent(pinterestUrl)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch board')
+      setPinterestImages(data.images)
+    } catch (err) {
+      setPinterestError(err instanceof Error ? err.message : 'Something went wrong.')
+    } finally {
+      setPinterestLoading(false)
     }
   }
 
@@ -272,6 +313,90 @@ export default function BuildPage() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'pinterest' && (
+        <div className="pt-5 px-6">
+          {/* URL input row */}
+          <div className="flex gap-3 mb-5">
+            <input
+              type="url"
+              value={pinterestUrl}
+              onChange={e => setPinterestUrl(e.target.value)}
+              onPaste={e => {
+                const pasted = e.clipboardData.getData('text')
+                setPinterestUrl(pasted)
+                if (isValidPinterestUrl(pasted)) {
+                  setTimeout(handlePinterestImport, 0)
+                }
+              }}
+              onKeyDown={e => e.key === 'Enter' && handlePinterestImport()}
+              placeholder="Paste a Pinterest board URL"
+              className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-white/35 transition-colors rounded-xl"
+              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+            />
+            <button
+              onClick={handlePinterestImport}
+              disabled={!isValidPinterestUrl(pinterestUrl) || pinterestLoading}
+              className="text-[9px] tracking-[0.25em] uppercase border border-white/15 px-5 py-2.5 rounded-xl text-white/50 hover:border-white/40 hover:text-white/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+            >
+              {pinterestLoading ? '···' : 'Import'}
+            </button>
+          </div>
+
+          {/* Error */}
+          {pinterestError && (
+            <p
+              className="text-white/35 text-xs mb-5"
+              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+            >
+              {pinterestError}
+            </p>
+          )}
+
+          {/* Pinterest image grid */}
+          {pinterestImages.length > 0 && (
+            <div className="vibe-grid -mx-6">
+              {pinterestImages.map((img, index) => {
+                const isSelected = selected.includes(img.id)
+                const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
+                return (
+                  <button
+                    key={img.id}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelected(prev => prev.filter(s => s !== img.id))
+                      } else if (!isDisabled) {
+                        setSelected(prev => [...prev, img.id])
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${
+                      isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'
+                    }`}
+                    style={{ animationDelay: `${index * 60}ms` }}
+                  >
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 animate-fade-in"
+                    />
+                    <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
+                    {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
+                        <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
+                          <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
