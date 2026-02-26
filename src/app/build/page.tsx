@@ -27,6 +27,23 @@ const CURATED_IMAGES = [
 
 const MAX_IMAGES = 5
 
+function isValidInstagramUrl(url: string): boolean {
+  try {
+    const u = new URL(url.trim())
+    const h = u.hostname
+    if (
+      h !== 'instagram.com' &&
+      h !== 'www.instagram.com' &&
+      h !== 'instagr.am' &&
+      h !== 'www.instagr.am'
+    ) return false
+    const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean)
+    return parts.length >= 2 && (parts[0] === 'p' || parts[0] === 'reel')
+  } catch {
+    return false
+  }
+}
+
 function isValidPinterestUrl(url: string): boolean {
   try {
     const u = new URL(url.trim())
@@ -49,13 +66,23 @@ export default function BuildPage() {
   const [loading, setLoading] = useState(false)
   const [loadingText, setLoadingText] = useState('Reading your vibe...')
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'curated' | 'pinterest'>('curated')
+  const [activeTab, setActiveTab] = useState<'curated' | 'pinterest' | 'instagram'>('curated')
   const [pinterestUrl, setPinterestUrl] = useState('')
   const [pinterestImages, setPinterestImages] = useState<{ id: string; url: string }[]>([])
   const [pinterestLoading, setPinterestLoading] = useState(false)
   const [pinterestError, setPinterestError] = useState<string | null>(null)
+  const [instagramUrl, setInstagramUrl] = useState('')
+  const [instagramImages, setInstagramImages] = useState<{ id: string; url: string }[]>([])
+  const [instagramType, setInstagramType] = useState<'single' | 'carousel' | null>(null)
+  const [instagramLoading, setInstagramLoading] = useState(false)
+  const [instagramError, setInstagramError] = useState<string | null>(null)
 
   const totalSelected = selected.length + uploadedImages.length
+
+  function switchTab(tab: 'curated' | 'pinterest' | 'instagram') {
+    setActiveTab(tab)
+    setSelected([])
+  }
 
   function toggleCurated(id: string) {
     if (selected.includes(id)) {
@@ -88,9 +115,13 @@ export default function BuildPage() {
   }
 
   async function handleDiscover(e: React.MouseEvent<HTMLButtonElement>) {
-    if (totalSelected === 0) return
-    spray(e.currentTarget.getBoundingClientRect())
+    const canDiscover =
+      (activeTab === 'instagram' && instagramType === 'single' && instagramImages.length > 0) ||
+      (activeTab === 'instagram' && instagramType === 'carousel' && selected.length > 0) ||
+      (activeTab !== 'instagram' && totalSelected > 0)
+    if (!canDiscover) return
 
+    spray(e.currentTarget.getBoundingClientRect())
     setLoading(true)
     setError(null)
 
@@ -99,17 +130,27 @@ export default function BuildPage() {
     const interval = setInterval(() => { i = (i + 1) % texts.length; setLoadingText(texts[i]) }, 2500)
 
     try {
-      const curatedUrls = selected
-        .map(id => {
-          const curated = CURATED_IMAGES.find(c => c.id === id)
-          if (curated) return curated.url
-          const pin = pinterestImages.find(p => p.id === id)
-          if (pin) return pin.url
-          return null
-        })
-        .filter((u): u is string => u !== null)
+      let tabUrls: string[] = []
+      if (activeTab === 'curated') {
+        tabUrls = selected
+          .map(id => CURATED_IMAGES.find(c => c.id === id)?.url)
+          .filter((u): u is string => u !== undefined)
+      } else if (activeTab === 'pinterest') {
+        tabUrls = selected
+          .map(id => pinterestImages.find(p => p.id === id)?.url)
+          .filter((u): u is string => u !== undefined)
+      } else if (activeTab === 'instagram') {
+        if (instagramType === 'carousel') {
+          tabUrls = instagramImages
+            .filter(img => selected.includes(img.id))
+            .map(img => img.url)
+        } else {
+          tabUrls = instagramImages.map(img => img.url)
+        }
+      }
+
       const uploadedBase64 = uploadedImages.map(img => img.base64)
-      const allImages = [...uploadedBase64, ...curatedUrls]
+      const allImages = [...uploadedBase64, ...tabUrls]
 
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
@@ -142,6 +183,27 @@ export default function BuildPage() {
       setLoading(false)
     } finally {
       clearInterval(interval)
+    }
+  }
+
+  async function handleInstagramImport(urlOverride?: string) {
+    const urlToUse = urlOverride ?? instagramUrl
+    if (!isValidInstagramUrl(urlToUse)) return
+    setInstagramLoading(true)
+    setInstagramError(null)
+    setInstagramImages([])
+    setInstagramType(null)
+
+    try {
+      const res = await fetch(`/api/instagram?url=${encodeURIComponent(urlToUse)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch post')
+      setInstagramImages(data.images)
+      setInstagramType(data.type)
+    } catch (err) {
+      setInstagramError(err instanceof Error ? err.message : 'Something went wrong.')
+    } finally {
+      setInstagramLoading(false)
     }
   }
 
@@ -219,10 +281,10 @@ export default function BuildPage() {
         </p>
         {/* Tab toggle */}
         <div className="flex gap-0 mt-6 border-b border-white/8">
-          {(['curated', 'pinterest'] as const).map(tab => (
+          {(['curated', 'pinterest', 'instagram'] as const).map(tab => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => switchTab(tab)}
               className={`text-[9px] tracking-[0.35em] uppercase pb-3 pr-6 transition-colors duration-200 ${
                 activeTab === tab
                   ? 'text-white border-b border-white -mb-px'
@@ -230,7 +292,7 @@ export default function BuildPage() {
               }`}
               style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
             >
-              {tab === 'curated' ? 'Curated' : 'Pinterest'}
+              {tab === 'curated' ? 'Curated' : tab === 'pinterest' ? 'Pinterest' : 'Instagram'}
             </button>
           ))}
         </div>
@@ -408,11 +470,26 @@ export default function BuildPage() {
       <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/95 backdrop-blur-sm border-t border-white/8">
         <button
           onClick={handleDiscover}
-          disabled={totalSelected === 0}
+          disabled={
+            (activeTab === 'instagram' && instagramType === 'single' && instagramImages.length === 0) ||
+            (activeTab === 'instagram' && instagramType === 'carousel' && selected.length === 0) ||
+            (activeTab === 'instagram' && instagramType === null) ||
+            (activeTab !== 'instagram' && totalSelected === 0)
+          }
           className="w-full py-4 bg-white text-black text-[9px] tracking-[0.35em] uppercase font-medium rounded-xl disabled:opacity-15 disabled:cursor-not-allowed hover:bg-white/88 active:scale-[0.99] transition-all duration-200"
           style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
         >
-          {totalSelected === 0 ? 'Select at least one image' : `Discover My Scent — ${totalSelected} selected`}
+          {activeTab === 'instagram' && instagramType === null
+            ? 'Import an Instagram post first'
+            : activeTab === 'instagram' && instagramType === 'single'
+            ? instagramImages.length === 0
+              ? 'Import an Instagram post first'
+              : 'Discover My Scent'
+            : activeTab === 'instagram' && instagramType === 'carousel' && selected.length === 0
+            ? 'Select images from the carousel'
+            : totalSelected === 0
+            ? 'Select at least one image'
+            : `Discover My Scent — ${totalSelected} selected`}
         </button>
       </div>
 
