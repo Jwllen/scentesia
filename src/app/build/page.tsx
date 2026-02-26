@@ -86,6 +86,7 @@ export default function BuildPage() {
       setInstagramImages([])
       setInstagramType(null)
       setInstagramError(null)
+      setInstagramUrl('')
     }
   }
 
