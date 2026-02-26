@@ -36,62 +36,99 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean;
 }
 
 /**
- * Extract Instagram CDN image URLs from server-rendered HTML.
- * Decodes HTML entities (&amp; → &) so URLs are valid for browser <img> use.
+ * Decode a URL string that was JSON-encoded inside an HTML script tag.
+ * Handles: \/ → /  and  \uXXXX → char  and  &amp; → &
  */
-function extractCdnImages(html: string): string[] {
-  const seenFilenames = new Set<string>()
+function decodeJsonUrl(raw: string): string {
+  return raw
+    .replace(/\\\//g, '/')
+    .replace(/\\u([0-9a-fA-F]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, '&')
+}
+
+/**
+ * Primary: extract carousel slides from the `carousel_media` JSON object that
+ * Instagram embeds in a <script> tag in the Googlebot-served HTML.
+ * Each carousel item has an image_versions2.candidates[] array ordered largest→smallest;
+ * we take the first (largest) candidate per unique image.
+ * Returns [] if no carousel_media key is found (i.e. the post is not a carousel).
+ */
+function extractFromCarouselJson(html: string): string[] {
+  const carouselStart = html.indexOf('"carousel_media":[')
+  if (carouselStart === -1) return []
+
+  // 60 KB is enough for up to ~20 slides at 10+ candidates each
+  const chunk = html.slice(carouselStart, carouselStart + 60000)
+  const seenFnames = new Set<string>()
+  const urls: string[] = []
+
+  // URLs in the script JSON have escaped forward slashes: https:\/\/...
+  const urlPattern = /"url"\s*:\s*"(https:\\/\\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
+  let m: RegExpExecArray | null
+  while ((m = urlPattern.exec(chunk)) !== null) {
+    const decoded = decodeJsonUrl(m[1])
+    if (decoded.includes('s150x150') || decoded.includes('150x150')) continue
+    if (!/\/t51\.\d+-15\//.test(decoded)) continue
+    const key = decoded.match(/\/(\d+_\d+_\d+_n\.\w+)/)?.[1] ?? decoded
+    if (!seenFnames.has(key)) {
+      seenFnames.add(key)
+      urls.push(decoded)
+    }
+  }
+
+  return urls
+}
+
+/**
+ * Fallback for single posts: scan img src= attributes.
+ * Decodes HTML entities (&amp; → &) so URLs are valid for browser <img> use.
+ *
+ * Uses a draggable-boundary heuristic: Instagram marks profile pics and "More posts"
+ * grid thumbnails with draggable="false"; carousel/post images are not draggable.
+ * We stop at the first draggable post-type (t51.x-15) img — these are always small
+ * s150x150 thumbnails. Profile-pic img tags (t51.2-19) are skipped before the
+ * draggable check so they don't trigger a premature stop.
+ */
+function extractFromImgSrc(html: string): string[] {
+  const seenFnames = new Set<string>()
   const urls: string[] = []
 
   function isValidPostUrl(raw: string): string | null {
     if (raw.includes('static.cdninstagram.com')) return null
     const url = raw.replace(/&amp;/g, '&')
-    // Only feed post image types (/t51.x-15/); profiles use -19, external proxied use /t13/
     if (!/\/t51\.\d+-15\//.test(url)) return null
     if (url.includes('s150x150') || url.includes('150x150')) return null
     return url
   }
 
   function addUrl(url: string) {
-    // Deduplicate by filename — same image can appear on multiple CDN nodes
     const key = url.match(/\/(\d+_\d+_\d+_n\.\w+)/)?.[1] ?? url
-    if (!seenFilenames.has(key)) {
-      seenFilenames.add(key)
+    if (!seenFnames.has(key)) {
+      seenFnames.add(key)
       urls.push(url)
     }
   }
 
-  // Primary: find each CDN src= attribute, then look backwards to the opening
-  // <img tag and check whether draggable="false" appears in that tag.
-  // Instagram marks profile pics and grid thumbnails with draggable="false";
-  // carousel slides are NOT draggable. Stop at the first draggable post-type image.
-  //
-  // Order matters:
-  //   1. Filter to post-type URLs (t51.x-15) first — profile avatars (t51.2-19),
-  //      JS bundles, and external media use different path tokens and must be skipped
-  //      entirely; their draggable="false" must NOT trigger the boundary stop.
-  //   2. Then check draggable — within the post-type set, draggable="false" signals
-  //      the boundary (thumbnails, "More posts" grid). These may be small (s150x150)
-  //      so the draggable check must come before the size filter.
   const srcRegex = /\bsrc="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
   let m: RegExpExecArray | null
   while ((m = srcRegex.exec(html)) !== null) {
-    // Skip non-post-type CDN URLs (profile pics, bundles, external media)
+    // Skip non-post-type CDN URLs (profile pics t51.2-19, bundles, external media)
     if (!/\/t51\.\d+-15\//.test(m[1])) continue
     // Look back up to 2000 chars for the opening <img tag
     const searchStart = Math.max(0, m.index - 2000)
     const before = html.slice(searchStart, m.index)
     const imgStart = before.lastIndexOf('<img')
-    if (imgStart === -1) continue  // not an img tag (could be <meta src=... — rare)
+    if (imgStart === -1) continue
     const tagFragment = before.slice(imgStart)
-    if (tagFragment.includes('draggable="false"')) break  // boundary: draggable post-type img
+    // draggable check before size filter: "More posts" thumbnails are t51.x-15 + small +
+    // draggable; we must stop on them even though isValidPostUrl would return null for them.
+    if (tagFragment.includes('draggable="false"')) break
     const url = isValidPostUrl(m[1])
-    if (!url) continue  // filtered (static CDN, small thumbnail, etc.)
+    if (!url) continue
     addUrl(url)
   }
 
-  // Fallback: if img scan found nothing, check og:image / twitter:image meta tags.
-  // Covers single posts where the main image may be nested differently.
+  // Last resort: og:image / twitter:image meta tags
   if (urls.length === 0) {
     const metaRegex = /content="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
     while ((m = metaRegex.exec(html)) !== null) {
@@ -101,6 +138,17 @@ function extractCdnImages(html: string): string[] {
   }
 
   return urls
+}
+
+/**
+ * Extract Instagram CDN image URLs from Googlebot-rendered HTML.
+ * Tries the embedded carousel_media JSON first (gets all carousel slides),
+ * then falls back to img src= scanning (sufficient for single posts).
+ */
+function extractCdnImages(html: string): string[] {
+  const fromJson = extractFromCarouselJson(html)
+  if (fromJson.length > 0) return fromJson
+  return extractFromImgSrc(html)
 }
 
 export async function GET(request: NextRequest) {
