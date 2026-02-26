@@ -82,6 +82,11 @@ export default function BuildPage() {
   function switchTab(tab: 'curated' | 'pinterest' | 'instagram') {
     setActiveTab(tab)
     setSelected([])
+    if (tab !== 'instagram') {
+      setInstagramImages([])
+      setInstagramType(null)
+      setInstagramError(null)
+    }
   }
 
   function toggleCurated(id: string) {
@@ -193,6 +198,7 @@ export default function BuildPage() {
     setInstagramError(null)
     setInstagramImages([])
     setInstagramType(null)
+    setSelected([])
 
     try {
       const res = await fetch(`/api/instagram?url=${encodeURIComponent(urlToUse)}`)
