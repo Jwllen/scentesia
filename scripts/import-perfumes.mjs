@@ -13,23 +13,45 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// L'Oréal Luxe brands (lowercase for matching)
+// L'Oréal Luxe brands (lowercase for matching against CSV brand column).
+// Includes Kering Beauté portfolio acquired by L'Oréal (closing H1 2026):
+// Creed, Gucci Beauté, Bottega Veneta, Balenciaga.
 const LOREAL_BRANDS = {
+  // Historic L'Oréal Luxe
   'lancome': 'Lancôme',
   'lancôme': 'Lancôme',
   'yves saint laurent': 'Yves Saint Laurent',
+  'saint-laurent': 'Yves Saint Laurent',
   'ysl': 'Yves Saint Laurent',
   'giorgio armani': 'Giorgio Armani',
   'armani': 'Giorgio Armani',
   'maison margiela': 'Maison Margiela',
+  'maison-martin-margiela': 'Maison Margiela',
+  'martin margiela': 'Maison Margiela',
   'mugler': 'Mugler',
   'thierry mugler': 'Mugler',
   'azzaro': 'Azzaro',
   'valentino': 'Valentino',
   'cacharel': 'Cacharel',
   'ralph lauren': 'Ralph Lauren',
+  'ralph-lauren': 'Ralph Lauren',
   'viktor&rolf': 'Viktor & Rolf',
   'viktor & rolf': 'Viktor & Rolf',
+  'viktor-rolf': 'Viktor & Rolf',
+  // L'Oréal Luxe licensed / owned
+  'prada': 'Prada',
+  'miu miu': 'Miu Miu',
+  'miu-miu': 'Miu Miu',
+  'diesel': 'Diesel',
+  'atelier cologne': 'Atelier Cologne',
+  'atelier-cologne': 'Atelier Cologne',
+  'aesop': 'Aesop',
+  // Kering Beauté acquisition (L'Oréal, 2025)
+  'creed': 'Creed',
+  'bottega veneta': 'Bottega Veneta',
+  'bottega-veneta': 'Bottega Veneta',
+  'balenciaga': 'Balenciaga',
+  'gucci': 'Gucci',
 }
 
 function parseNotes(notesStr) {
