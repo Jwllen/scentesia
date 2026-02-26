@@ -57,15 +57,17 @@ function extractFromCarouselJson(html: string): string[] {
   const carouselStart = html.indexOf('"carousel_media":[')
   if (carouselStart === -1) return []
 
-  // 60 KB is enough for up to ~20 slides at 10+ candidates each
-  const chunk = html.slice(carouselStart, carouselStart + 60000)
+  // Pre-decode backslash-escaped forward slashes so URLs look like https://...
+  // This avoids regex literal issues with \/ sequences in the source.
+  // 60 KB covers up to ~20 slides at 10+ resolution candidates each.
+  const chunk = html.slice(carouselStart, carouselStart + 60000).replace(/\\\//g, '/')
   const seenFnames = new Set<string>()
   const urls: string[] = []
 
-  // URLs in the script JSON have escaped forward slashes: https:\/\/...
-  const urlPattern = /"url"\s*:\s*"(https:\\\/\\\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
+  const urlPattern = /"url"\s*:\s*"(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
   let m: RegExpExecArray | null
   while ((m = urlPattern.exec(chunk)) !== null) {
+    // Decode remaining JSON escapes (\uXXXX) and HTML entities
     const decoded = decodeJsonUrl(m[1])
     if (decoded.includes('s150x150') || decoded.includes('150x150')) continue
     if (!/\/t51\.\d+-15\//.test(decoded)) continue
