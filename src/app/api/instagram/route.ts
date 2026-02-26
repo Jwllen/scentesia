@@ -41,7 +41,7 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean;
  */
 function decodeJsonUrl(raw: string): string {
   return raw
-    .replace(/\\\//g, '/')
+    .split('\\/').join('/')   // \/ → /  (split avoids regex backslash-slash issues)
     .replace(/\\u([0-9a-fA-F]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&amp;/g, '&')
 }
@@ -60,7 +60,7 @@ function extractFromCarouselJson(html: string): string[] {
   // Pre-decode backslash-escaped forward slashes so URLs look like https://...
   // This avoids regex literal issues with \/ sequences in the source.
   // 60 KB covers up to ~20 slides at 10+ resolution candidates each.
-  const chunk = html.slice(carouselStart, carouselStart + 60000).replace(/\\\//g, '/')
+  const chunk = html.slice(carouselStart, carouselStart + 60000).split('\\/').join('/')
   const seenFnames = new Set<string>()
   const urls: string[] = []
 
