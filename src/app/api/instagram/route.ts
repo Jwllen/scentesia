@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const MAX_IMAGES = 5
 
-const BROWSER_HEADERS: HeadersInit = {
-  'User-Agent':
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+// Googlebot UA gets server-rendered HTML with actual image URLs.
+// Browser UAs get a JS-shell with no image URLs in the initial HTML.
+const GOOGLEBOT_HEADERS: HeadersInit = {
+  'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)',
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
 }
@@ -35,20 +36,22 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean;
 }
 
 /**
- * Extract Instagram CDN image URLs from HTML.
- * Targets scontent / cdninstagram CDN hosts, skips profile pictures.
+ * Extract Instagram CDN image URLs from server-rendered HTML.
+ * Decodes HTML entities (&amp; → &) so URLs are valid for browser <img> use.
  */
 function extractCdnImages(html: string): string[] {
   const seen = new Set<string>()
   const urls: string[] = []
-  // Match quoted src/content attributes pointing to Instagram CDN
   const regex = /(?:src|content)="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
   let m: RegExpExecArray | null
   while ((m = regex.exec(html)) !== null) {
-    const url = m[1]
-    // Skip profile pictures, icons, and video thumbnails that are too small
-    if (url.includes('150x150') || url.includes('s150x150')) continue
-    if (url.includes('/p/') && url.includes('profile')) continue
+    const raw = m[1]
+    // Skip static resources (JS/CSS bundles) — only image CDN hosts matter
+    if (raw.includes('static.cdninstagram.com')) continue
+    // Decode HTML entities so the URL is usable in <img src>
+    const url = raw.replace(/&amp;/g, '&')
+    // Skip profile pictures and small thumbnails
+    if (url.includes('s150x150') || url.includes('150x150')) continue
     if (!seen.has(url)) {
       seen.add(url)
       urls.push(url)
@@ -72,56 +75,30 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const { shortcode } = parsed
+  const { shortcode, pathType } = parsed
 
   try {
-    // ── Step 1: Embed page (reliable, always works for public posts) ──────────
-    const embedRes = await fetch(
-      `https://www.instagram.com/${parsed.pathType}/${shortcode}/embed/captioned/`,
-      { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(15000) }
+    // Googlebot UA returns server-rendered HTML with actual scontent image URLs.
+    // Browser UAs get a JS-only shell with no images in the initial HTML.
+    const res = await fetch(
+      `https://www.instagram.com/${pathType}/${shortcode}/`,
+      { headers: GOOGLEBOT_HEADERS, signal: AbortSignal.timeout(15000) }
     )
-    if (!embedRes.ok) throw new Error(`Instagram returned ${embedRes.status}`)
-    const embedHtml = await embedRes.text()
+    if (!res.ok) throw new Error(`Instagram returned ${res.status}`)
+    const html = await res.text()
 
-    const embedImages = extractCdnImages(embedHtml)
+    const images = extractCdnImages(html)
 
-    // Carousel detection: the word "carousel" or "sidecar" appears in embed markup,
-    // or more than one distinct image URL was found.
-    const looksLikeCarousel =
-      /carousel|sidecar/i.test(embedHtml) || embedImages.length > 1
-
-    // ── Step 2: For carousels try the main post page for all slides ───────────
-    if (looksLikeCarousel) {
-      try {
-        const mainRes = await fetch(
-          `https://www.instagram.com/${parsed.pathType}/${shortcode}/`,
-          { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(15000) }
-        )
-        if (mainRes.ok) {
-          const mainHtml = await mainRes.text()
-          const mainImages = extractCdnImages(mainHtml)
-          if (mainImages.length > 1) {
-            const images = mainImages.slice(0, MAX_IMAGES).map((url, i) => ({ id: `ig_${i}`, url }))
-            const type = images.length > 1 ? 'carousel' : 'single'
-            return NextResponse.json({ images, type })
-          }
-        }
-      } catch {
-        // Fall through to embed images
-      }
-    }
-
-    // ── Fallback / single post ────────────────────────────────────────────────
-    if (embedImages.length === 0) {
+    if (images.length === 0) {
       return NextResponse.json(
         { error: "This post is private or couldn't be reached." },
         { status: 404 }
       )
     }
 
-    const type = embedImages.length > 1 ? 'carousel' : 'single'
-    const images = embedImages.slice(0, MAX_IMAGES).map((url, i) => ({ id: `ig_${i}`, url }))
-    return NextResponse.json({ images, type })
+    const capped = images.slice(0, MAX_IMAGES).map((url, i) => ({ id: `ig_${i}`, url }))
+    const type = capped.length > 1 ? 'carousel' : 'single'
+    return NextResponse.json({ images: capped, type })
   } catch {
     return NextResponse.json(
       { error: "Instagram couldn't be reached. Try again later." },
