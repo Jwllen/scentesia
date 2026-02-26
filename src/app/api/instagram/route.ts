@@ -39,10 +39,14 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean;
  * Decode a URL string that was JSON-encoded inside an HTML script tag.
  * Handles: \/ → /  and  \uXXXX → char  and  &amp; → &
  */
+// Matches \uXXXX sequences literally (e.g. \u0026 → &).
+// Built with new RegExp to avoid Turbopack SWC issues with \\u in regex literals.
+const JSON_UNICODE_RE = new RegExp('\\\\u([0-9a-fA-F]{4})', 'gi')
+
 function decodeJsonUrl(raw: string): string {
   return raw
-    .split('\\/').join('/')   // \/ → /  (split avoids regex backslash-slash issues)
-    .replace(/\\u([0-9a-fA-F]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .split('\\/').join('/')
+    .replace(JSON_UNICODE_RE, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&amp;/g, '&')
 }
 
