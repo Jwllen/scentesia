@@ -36,6 +36,7 @@ export default function BuildPage() {
   const [loading, setLoading] = useState(false)
   const [loadingText, setLoadingText] = useState('Reading your vibe...')
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'curated' | 'pinterest'>('curated')
 
   const totalSelected = selected.length + uploadedImages.length
 
@@ -172,6 +173,23 @@ export default function BuildPage() {
         >
           Choose up to 5 images. Let instinct guide you.
         </p>
+        {/* Tab toggle */}
+        <div className="flex gap-0 mt-6 border-b border-white/8">
+          {(['curated', 'pinterest'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`text-[9px] tracking-[0.35em] uppercase pb-3 pr-6 transition-colors duration-200 ${
+                activeTab === tab
+                  ? 'text-white border-b border-white -mb-px'
+                  : 'text-white/25 hover:text-white/50'
+              }`}
+              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+            >
+              {tab === 'curated' ? 'Curated' : 'Pinterest'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Uploaded images strip */}
@@ -222,38 +240,40 @@ export default function BuildPage() {
       )}
 
       {/* Blind vibe grid */}
-      <div className="pt-5">
-        <div className="vibe-grid">
-          {CURATED_IMAGES.map((img) => {
-            const isSelected = selected.includes(img.id)
-            const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
+      {activeTab === 'curated' && (
+        <div className="pt-5">
+          <div className="vibe-grid">
+            {CURATED_IMAGES.map((img) => {
+              const isSelected = selected.includes(img.id)
+              const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
 
-            return (
-              <button
-                key={img.id}
-                onClick={() => toggleCurated(img.id)}
-                disabled={isDisabled}
-                className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
-              >
-                <img
-                  src={img.url}
-                  alt=""
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
-                {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
-                {isSelected && (
-                  <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
-                    <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
-                      <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            )
-          })}
+              return (
+                <button
+                  key={img.id}
+                  onClick={() => toggleCurated(img.id)}
+                  disabled={isDisabled}
+                  className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
+                >
+                  <img
+                    src={img.url}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
+                  {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
+                      <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/95 backdrop-blur-sm border-t border-white/8">
