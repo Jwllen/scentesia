@@ -40,23 +40,59 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean;
  * Decodes HTML entities (&amp; → &) so URLs are valid for browser <img> use.
  */
 function extractCdnImages(html: string): string[] {
-  const seen = new Set<string>()
+  const seenFilenames = new Set<string>()
   const urls: string[] = []
-  const regex = /(?:src|content)="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
-  let m: RegExpExecArray | null
-  while ((m = regex.exec(html)) !== null) {
-    const raw = m[1]
-    // Skip static resources (JS/CSS bundles) — only image CDN hosts matter
-    if (raw.includes('static.cdninstagram.com')) continue
-    // Decode HTML entities so the URL is usable in <img src>
+
+  function isValidPostUrl(raw: string): string | null {
+    if (raw.includes('static.cdninstagram.com')) return null
     const url = raw.replace(/&amp;/g, '&')
-    // Skip profile pictures and small thumbnails
-    if (url.includes('s150x150') || url.includes('150x150')) continue
-    if (!seen.has(url)) {
-      seen.add(url)
+    // Only feed post image types (/t51.x-15/); profiles use -19, external proxied use /t13/
+    if (!/\/t51\.\d+-15\//.test(url)) return null
+    if (url.includes('s150x150') || url.includes('150x150')) return null
+    return url
+  }
+
+  function addUrl(url: string) {
+    // Deduplicate by filename — same image can appear on multiple CDN nodes
+    const key = url.match(/\/(\d+_\d+_\d+_n\.\w+)/)?.[1] ?? url
+    if (!seenFilenames.has(key)) {
+      seenFilenames.add(key)
       urls.push(url)
     }
   }
+
+  // Primary: find each CDN src= attribute, then look backwards to the opening
+  // <img tag and check whether draggable="false" appears in that tag.
+  // Instagram marks profile pics and grid thumbnails with draggable="false";
+  // carousel slides are NOT draggable. Stop at the first draggable CDN image.
+  // IMPORTANT: draggable check must happen BEFORE size filtering — the "More posts"
+  // section uses s150x150 thumbnails (filtered by isValidPostUrl) which would otherwise
+  // be silently skipped via `continue`, letting a second non-draggable cluster through.
+  const srcRegex = /\bsrc="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
+  let m: RegExpExecArray | null
+  while ((m = srcRegex.exec(html)) !== null) {
+    // Look back up to 2000 chars for the opening <img tag
+    const searchStart = Math.max(0, m.index - 2000)
+    const before = html.slice(searchStart, m.index)
+    const imgStart = before.lastIndexOf('<img')
+    if (imgStart === -1) continue  // not an img tag (could be <meta src=... — rare)
+    const tagFragment = before.slice(imgStart)
+    if (tagFragment.includes('draggable="false"')) break  // hit profile/thumbnail boundary
+    const url = isValidPostUrl(m[1])
+    if (!url) continue
+    addUrl(url)
+  }
+
+  // Fallback: if img scan found nothing, check og:image / twitter:image meta tags.
+  // Covers single posts where the main image may be nested differently.
+  if (urls.length === 0) {
+    const metaRegex = /content="(https:\/\/[^"]*(?:cdninstagram\.com|fbcdn\.net)[^"]*)"/g
+    while ((m = metaRegex.exec(html)) !== null) {
+      const url = isValidPostUrl(m[1])
+      if (url) addUrl(url)
+    }
+  }
+
   return urls
 }
 
