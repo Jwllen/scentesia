@@ -143,14 +143,15 @@ export default function BuildPage() {
     }
   }
 
-  async function handlePinterestImport() {
-    if (!isValidPinterestUrl(pinterestUrl)) return
+  async function handlePinterestImport(urlOverride?: string) {
+    const urlToUse = urlOverride ?? pinterestUrl
+    if (!isValidPinterestUrl(urlToUse)) return
     setPinterestLoading(true)
     setPinterestError(null)
     setPinterestImages([])
 
     try {
-      const res = await fetch(`/api/pinterest?url=${encodeURIComponent(pinterestUrl)}`)
+      const res = await fetch(`/api/pinterest?url=${encodeURIComponent(urlToUse)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to fetch board')
       setPinterestImages(data.images)
@@ -328,7 +329,7 @@ export default function BuildPage() {
                 const pasted = e.clipboardData.getData('text')
                 setPinterestUrl(pasted)
                 if (isValidPinterestUrl(pasted)) {
-                  setTimeout(handlePinterestImport, 0)
+                  handlePinterestImport(pasted)
                 }
               }}
               onKeyDown={e => e.key === 'Enter' && handlePinterestImport()}
@@ -337,7 +338,7 @@ export default function BuildPage() {
               style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
             />
             <button
-              onClick={handlePinterestImport}
+              onClick={() => handlePinterestImport()}
               disabled={!isValidPinterestUrl(pinterestUrl) || pinterestLoading}
               className="text-[9px] tracking-[0.25em] uppercase border border-white/15 px-5 py-2.5 rounded-xl text-white/50 hover:border-white/40 hover:text-white/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
               style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
