@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BROWSER_HEADERS = {
+const MAX_IMAGES = 5
+
+const BROWSER_HEADERS: HeadersInit = {
   'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
 }
 
-/** Returns the shortcode for /p/ and /reel/ URLs, null for profiles or invalid URLs. */
-function extractShortcode(raw: string): { shortcode: string; isProfile: boolean } | null {
+/** Returns parsed shortcode info for /p/ and /reel/ URLs. Returns isProfile:true for profile paths, null for non-Instagram or invalid URLs. */
+function extractShortcode(raw: string): { shortcode: string; isProfile: boolean; pathType: 'p' | 'reel' } | null {
   try {
     const url = new URL(raw.trim())
     const h = url.hostname
@@ -22,10 +24,10 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean 
     if (parts.length === 0) return null
     if (parts[0] === 'p' || parts[0] === 'reel') {
       if (parts.length < 2) return null
-      return { shortcode: parts[1], isProfile: false }
+      return { shortcode: parts[1], isProfile: false, pathType: parts[0] as 'p' | 'reel' }
     }
     // Single segment = profile (e.g. /username/)
-    if (parts.length === 1) return { shortcode: parts[0], isProfile: true }
+    if (parts.length === 1) return { shortcode: parts[0], isProfile: true, pathType: 'p' }
     return null
   } catch {
     return null
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
   try {
     // ── Step 1: Embed page (reliable, always works for public posts) ──────────
     const embedRes = await fetch(
-      `https://www.instagram.com/p/${shortcode}/embed/captioned/`,
+      `https://www.instagram.com/${parsed.pathType}/${shortcode}/embed/captioned/`,
       { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(15000) }
     )
     if (!embedRes.ok) throw new Error(`Instagram returned ${embedRes.status}`)
@@ -92,17 +94,16 @@ export async function GET(request: NextRequest) {
     if (looksLikeCarousel) {
       try {
         const mainRes = await fetch(
-          `https://www.instagram.com/p/${shortcode}/`,
+          `https://www.instagram.com/${parsed.pathType}/${shortcode}/`,
           { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(15000) }
         )
         if (mainRes.ok) {
           const mainHtml = await mainRes.text()
           const mainImages = extractCdnImages(mainHtml)
           if (mainImages.length > 1) {
-            const images = mainImages
-              .slice(0, 5)
-              .map((url, i) => ({ id: `ig_${i}`, url }))
-            return NextResponse.json({ images, type: 'carousel' })
+            const images = mainImages.slice(0, MAX_IMAGES).map((url, i) => ({ id: `ig_${i}`, url }))
+            const type = images.length > 1 ? 'carousel' : 'single'
+            return NextResponse.json({ images, type })
           }
         }
       } catch {
@@ -118,8 +119,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const type = looksLikeCarousel ? 'carousel' : 'single'
-    const images = embedImages.slice(0, 5).map((url, i) => ({ id: `ig_${i}`, url }))
+    const type = embedImages.length > 1 ? 'carousel' : 'single'
+    const images = embedImages.slice(0, MAX_IMAGES).map((url, i) => ({ id: `ig_${i}`, url }))
     return NextResponse.json({ images, type })
   } catch {
     return NextResponse.json(
