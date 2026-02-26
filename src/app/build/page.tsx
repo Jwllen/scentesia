@@ -30,6 +30,8 @@ const MAX_IMAGES = 5
 function isValidPinterestUrl(url: string): boolean {
   try {
     const u = new URL(url.trim())
+    // Accept pin.it short links — the API resolves the redirect server-side
+    if (u.hostname === 'pin.it') return true
     if (!u.hostname.includes('pinterest')) return false
     const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean)
     return parts.length >= 2
@@ -326,6 +328,7 @@ export default function BuildPage() {
               value={pinterestUrl}
               onChange={e => setPinterestUrl(e.target.value)}
               onPaste={e => {
+                e.preventDefault()
                 const pasted = e.clipboardData.getData('text')
                 setPinterestUrl(pasted)
                 if (isValidPinterestUrl(pasted)) {
