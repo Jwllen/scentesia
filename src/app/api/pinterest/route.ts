@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 function normaliseToPinterestRss(raw: string): string | null {
   try {
     const url = new URL(raw.trim())
-    // Accept any pinterest.* domain
-    if (!url.hostname.includes('pinterest')) return null
+    // Accept only known pinterest hostnames
+    const validHosts = ['www.pinterest.com', 'pinterest.com', 'www.pinterest.fr', 'pinterest.fr', 'www.pinterest.co.uk', 'pinterest.co.uk']
+    if (!validHosts.some(h => url.hostname === h)) return null
     // Must have at least /username/board-name path segments
     const parts = url.pathname.replace(/\/$/, '').split('/').filter(Boolean)
     if (parts.length < 2) return null
@@ -24,7 +25,9 @@ export async function GET(request: NextRequest) {
   try {
     const res = await fetch(rssUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(10000),
     })
+    if (!res.ok) throw new Error(`Pinterest returned ${res.status}`)
 
     const xml = await res.text()
 
