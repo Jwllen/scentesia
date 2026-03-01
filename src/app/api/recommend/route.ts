@@ -3,6 +3,8 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 import type { VibeAnalysis, PerfumeRecommendation } from '@/types'
 
 const LOREAL_BIAS = process.env.LOREAL_BIAS_ENABLED === 'true'
+const LOREAL_TOP_ROW = process.env.LOREAL_TOP_ROW_ENABLED === 'true'
+const LOREAL_TOP_ROW_SLOTS = parseInt(process.env.LOREAL_TOP_ROW_SLOTS || '4', 10)
 
 /**
  * Positional weights for matched accords.
@@ -77,9 +79,22 @@ export async function POST(request: NextRequest) {
       } as PerfumeRecommendation
     })
 
-    const recommendations = scored
-      .sort((a, b) => b.match_score - a.match_score)
-      .slice(0, 8)
+    scored.sort((a, b) => b.match_score - a.match_score)
+
+    let recommendations: PerfumeRecommendation[]
+
+    if (LOREAL_TOP_ROW) {
+      // Guarantee: first N slots are the highest-scoring L'Oréal perfumes,
+      // remaining slots filled by the highest-scoring non-L'Oréal perfumes.
+      // Both partitions stay in score-descending order.
+      const loreal = scored.filter(p => p.is_loreal)
+      const other = scored.filter(p => !p.is_loreal)
+      const topLoreal = loreal.slice(0, LOREAL_TOP_ROW_SLOTS)
+      const remaining = 8 - topLoreal.length
+      recommendations = [...topLoreal, ...other.slice(0, remaining)]
+    } else {
+      recommendations = scored.slice(0, 8)
+    }
 
     return NextResponse.json({ recommendations })
   } catch (error) {
