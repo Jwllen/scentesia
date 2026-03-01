@@ -42,8 +42,17 @@ function parseBoardPath(boardUrl: string): { username: string; slug: string; pat
   return { username: parts[0], slug: parts[1], path: u.pathname }
 }
 
-/** Fetch the board page to establish a session (cookies + app version). */
-async function getSession(boardUrl: string): Promise<{ cookies: string; csrfToken: string; appVersion: string }> {
+interface Session {
+  cookies: string
+  csrfToken: string
+  appVersion: string
+  htmlPins: { id: string; url: string }[]
+  boardId: string | null
+  initialBookmark: string | null
+}
+
+/** Fetch the board page to establish a session and extract any HTML-embedded pins as fallback. */
+async function getSession(boardUrl: string): Promise<Session> {
   const res = await fetch(boardUrl, {
     headers: BROWSER_HEADERS,
     signal: AbortSignal.timeout(15000),
@@ -61,7 +70,45 @@ async function getSession(boardUrl: string): Promise<{ cookies: string; csrfToke
   const avMatch = html.match(/"appVersion"\s*:\s*"([a-f0-9]+)"/)
   const appVersion = avMatch?.[1] ?? '466b2af'
 
-  return { cookies, csrfToken, appVersion }
+  // Try to extract pins from __PWS_INITIAL_PROPS__ (HTML fallback)
+  const htmlPins: { id: string; url: string }[] = []
+  let boardId: string | null = null
+  let initialBookmark: string | null = null
+
+  const match = html.match(/__PWS_INITIAL_PROPS__[^>]*>([\s\S]*?)<\/script>/)
+  if (match) {
+    try {
+      const pageData = JSON.parse(match[1]) as AnyRecord
+      const redux = pageData?.initialReduxState as AnyRecord | undefined
+
+      // Extract pins
+      const pins = redux?.pins as AnyRecord | undefined
+      if (pins && typeof pins === 'object') {
+        for (const [pinId, pin] of Object.entries(pins)) {
+          const url = (pin as AnyRecord)?.images?.['736x']?.url
+          if (url) htmlPins.push({ id: `pin_${pinId}`, url })
+        }
+      }
+
+      // Extract board ID
+      const boards = redux?.boards as AnyRecord | undefined
+      if (boards) {
+        const firstKey = Object.keys(boards)[0]
+        if (firstKey) boardId = firstKey
+      }
+
+      // Extract initial bookmark
+      const resources = redux?.resources as AnyRecord | undefined
+      if (resources?.BoardFeedResource) {
+        for (const val of Object.values(resources.BoardFeedResource) as AnyRecord[]) {
+          const bm = val?.nextBookmark ?? val?.response?.bookmark
+          if (bm && typeof bm === 'string') { initialBookmark = bm; break }
+        }
+      }
+    } catch { /* parse failed — proceed without HTML pins */ }
+  }
+
+  return { cookies, csrfToken, appVersion, htmlPins, boardId, initialBookmark }
 }
 
 /** POST to a Pinterest internal resource endpoint. */
@@ -131,31 +178,30 @@ export async function GET(request: NextRequest) {
   try {
     const { username, slug, path } = parseBoardPath(boardUrl)
 
-    // ── Step 1: Establish session ───────────────────────────────────────
+    // ── Step 1: Establish session + extract HTML-embedded pins ──────────
     const session = await getSession(boardUrl)
 
-    // ── Step 2: Get board info ──────────────────────────────────────────
-    let boardId: string | null = null
-    try {
-      const boardRes = await pinterestApi(
-        'BoardResource',
-        { slug, username, field_set_key: 'detailed' },
-        session,
-        path,
-      )
-      const board = boardRes?.resource_response?.data
-      if (board?.id) boardId = String(board.id)
-    } catch {
-      // Board lookup failed — try feed directly without board_id
+    const images: { id: string; url: string }[] = [...session.htmlPins]
+    const seen = new Set<string>(images.map(i => i.id))
+
+    // ── Step 2: Try API pagination for remaining pins ───────────────────
+    let boardId = session.boardId
+    if (!boardId) {
+      try {
+        const boardRes = await pinterestApi(
+          'BoardResource',
+          { slug, username, field_set_key: 'detailed' },
+          session,
+          path,
+        )
+        const board = boardRes?.resource_response?.data
+        if (board?.id) boardId = String(board.id)
+      } catch { /* proceed without board_id */ }
     }
 
-    // ── Step 3: Fetch pins via BoardFeedResource ────────────────────────
-    const images: { id: string; url: string }[] = []
-    const seen = new Set<string>()
-    let bookmark: string | null = null
+    let bookmark = session.initialBookmark
     let pages = 0
 
-    // First request — no bookmark needed
     const feedOptions: AnyRecord = {
       board_url: path,
       field_set_key: 'react_grid_pin',
@@ -185,21 +231,20 @@ export async function GET(request: NextRequest) {
         if (pins.length === 0) break
 
         for (const pin of pins) {
-          if (!pin?.id || seen.has(String(pin.id)) || images.length >= MAX_PINS) continue
+          if (!pin?.id || seen.has(`pin_${pin.id}`) || images.length >= MAX_PINS) continue
           const url = pin?.images?.['736x']?.url
           if (url) {
-            seen.add(String(pin.id))
+            seen.add(`pin_${pin.id}`)
             images.push({ id: `pin_${pin.id}`, url })
           }
         }
 
-        // Next bookmark
         const nextBookmarks = feedRes?.resource?.options?.bookmarks as string[] | undefined
         const next = nextBookmarks?.[0] ?? null
         if (!next || next === '-end-' || next.startsWith('Y2JOb25lO') || next === bookmark) break
         bookmark = next
       } catch {
-        break // network error — return what we have
+        break // API failed — return whatever we have (HTML pins as fallback)
       }
     }
 
