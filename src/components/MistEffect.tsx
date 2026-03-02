@@ -21,6 +21,7 @@ interface AmbientParticle {
   speed: number
   wanderAngle: number
   wanderSpeed: number
+  teal: boolean
 }
 
 interface SprayParticle {
@@ -43,7 +44,7 @@ export const useMist = () => useContext(MistContext)
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const AMBIENT_COUNT = 640   // dense mist field
+const AMBIENT_COUNT = 400   // dense mist field
 const REPEL_RADIUS  = 80    // px — elegant, close push
 const REPEL_FORCE   = 1.4   // gentle displacement
 const VELOCITY_CAP  = 2.2   // slow, gracious max speed
@@ -52,16 +53,20 @@ const DAMPING       = 0.94  // slow drift back — unhurried
 // ─── Ambient particle factory ─────────────────────────────────────────────────
 
 function makeAmbient(w: number, h: number): AmbientParticle {
+  const isTeal = Math.random() < 0.7
   return {
     x: Math.random() * w,
     y: Math.random() * h,
     vx: 0,
     vy: 0,
     size: Math.random() * 1.6 + 0.3,
-    opacity: Math.random() * 0.25 + 0.06,
-    speed: Math.random() * 0.13 + 0.03,
+    opacity: isTeal
+      ? Math.random() * 0.5 + 0.3   // teal particles: 0.3–0.8
+      : Math.random() * 0.15 + 0.1,  // white particles: 0.1–0.25
+    speed: Math.random() * 0.08 + 0.02,
     wanderAngle: Math.random() * Math.PI * 2,
     wanderSpeed: (Math.random() - 0.5) * 0.007,
+    teal: isTeal,
   }
 }
 
@@ -173,7 +178,6 @@ export function MistProvider({ children }: { children: ReactNode }) {
       const my = mouse.current.y
 
       // ── Ambient field ──────────────────────────────────────────────────────
-      ctx.fillStyle = '#ffffff'
 
       for (const p of ambient.current) {
         // Slowly evolving drift direction
@@ -213,15 +217,17 @@ export function MistProvider({ children }: { children: ReactNode }) {
         if (p.y > H+4) p.y = -4
 
         ctx.globalAlpha = p.opacity
+        ctx.fillStyle = p.teal ? 'rgb(30,69,91)' : '#ffffff'
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
         ctx.fill()
       }
 
       // ── Atomiser spray ─────────────────────────────────────────────────────
-      // Rendered as identical tiny specks — the spray dissolves seamlessly
+      // Rendered as teal-tinted specks — the spray dissolves seamlessly
       // into the ambient field as it slows to drift speed.
 
+      ctx.fillStyle = '#9cb2bf'
       sprays.current = sprays.current.filter(p => p.life > 0.005)
 
       for (const p of sprays.current) {

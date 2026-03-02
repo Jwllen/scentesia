@@ -40,10 +40,10 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10 }: Ti
       const p4 = Math.min(100, base + 22)
       const p5 = Math.min(100, base + 48)
 
-      const streak = `linear-gradient(135deg, transparent ${p0}%, rgba(255,255,255,0.015) ${p1}%, rgba(255,255,255,0.09) ${p2}%, rgba(255,255,255,0.09) ${p3}%, rgba(255,255,255,0.015) ${p4}%, transparent ${p5}%)`
-      const e1     = `radial-gradient(ellipse 20% 14% at ${base - 3}% 24%, rgba(255,255,255,0.04) 0%, transparent 100%)`
-      const e2     = `radial-gradient(ellipse 24% 12% at ${base + 2}% 54%, rgba(255,255,255,0.03) 0%, transparent 100%)`
-      const e3     = `radial-gradient(ellipse 16% 10% at ${base - 1}% 78%, rgba(255,255,255,0.035) 0%, transparent 100%)`
+      const streak = `linear-gradient(135deg, transparent ${p0}%, rgba(30,69,91,0.02) ${p1}%, rgba(30,69,91,0.12) ${p2}%, rgba(30,69,91,0.12) ${p3}%, rgba(30,69,91,0.02) ${p4}%, transparent ${p5}%)`
+      const e1     = `radial-gradient(ellipse 20% 14% at ${base - 3}% 24%, rgba(30,69,91,0.06) 0%, transparent 100%)`
+      const e2     = `radial-gradient(ellipse 24% 12% at ${base + 2}% 54%, rgba(30,69,91,0.04) 0%, transparent 100%)`
+      const e3     = `radial-gradient(ellipse 16% 10% at ${base - 1}% 78%, rgba(30,69,91,0.05) 0%, transparent 100%)`
 
       shine.style.background = [streak, e1, e2, e3].join(', ')
       shine.style.opacity    = '1'
@@ -51,8 +51,8 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10 }: Ti
     }
 
     if (border) {
-      // Glow follows cursor position around the border
-      border.style.background = `radial-gradient(circle at ${cx * 100}% ${cy * 100}%, rgba(255,255,255,0.28) 0%, transparent 55%)`
+      // Glow follows cursor position around the border — teal tint
+      border.style.background = `radial-gradient(circle at ${cx * 100}% ${cy * 100}%, rgba(30,69,91,0.45) 0%, transparent 55%)`
       border.style.opacity    = '1'
       border.style.transition = 'opacity 0.06s linear'
     }

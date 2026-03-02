@@ -3,27 +3,13 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMist } from '@/components/MistEffect'
+import { Logo } from '@/components/Logo'
 
-const CURATED_IMAGES = [
-  { id: 'c1',  url: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&q=85', accords: ['leather', 'smoky', 'woody', 'amber'] },
-  { id: 'c2',  url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=85', accords: ['green', 'earthy', 'woody', 'fresh'] },
-  { id: 'c3',  url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=85', accords: ['powdery', 'musk', 'white floral', 'sandalwood'] },
-  { id: 'c4',  url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=85', accords: ['fruity', 'aquatic', 'floral', 'citrus'] },
-  { id: 'c5',  url: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=600&q=85', accords: ['vanilla', 'gourmand', 'musk', 'powdery'] },
-  { id: 'c6',  url: 'https://images.unsplash.com/photo-1531973576160-7125cd663d86?w=600&q=85', accords: ['oud', 'amber', 'spicy', 'leather'] },
-  { id: 'c7',  url: 'https://images.unsplash.com/photo-1490750967868-88df5691890d?w=600&q=85', accords: ['rose', 'floral', 'white floral', 'powdery'] },
-  { id: 'c8',  url: 'https://images.unsplash.com/photo-1510784722466-f2aa240267d4?w=600&q=85', accords: ['sandalwood', 'earthy', 'spicy', 'amber'] },
-  { id: 'c9',  url: 'https://images.unsplash.com/photo-1499856871958-5b9357976b82?w=600&q=85', accords: ['iris', 'musk', 'white floral', 'woody'] },
-  { id: 'c10', url: 'https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=600&q=85', accords: ['green', 'earthy', 'woody', 'smoky'] },
-  { id: 'c11', url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=85', accords: ['citrus', 'fresh', 'aquatic', 'green'] },
-  { id: 'c12', url: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&q=85', accords: ['gourmand', 'vanilla', 'amber', 'spicy'] },
-  { id: 'c13', url: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=600&q=85', accords: ['sandalwood', 'green', 'woody', 'citrus'] },
-  { id: 'c14', url: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=600&q=85', accords: ['oud', 'amber', 'leather', 'smoky'] },
-  { id: 'c15', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600&q=85', accords: ['aquatic', 'citrus', 'fresh', 'green'] },
-  { id: 'c16', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=85', accords: ['fresh', 'green', 'earthy', 'woody'] },
-  { id: 'c17', url: 'https://images.unsplash.com/photo-1490750967868-88df5691890d?w=600&q=85', accords: ['floral', 'rose', 'fresh', 'powdery'] },
-  { id: 'c18', url: 'https://images.unsplash.com/photo-1533038590840-1cee814cad0b?w=600&q=85', accords: ['vanilla', 'amber', 'musk', 'woody'] },
-]
+const CURATED_COUNT = 138
+const CURATED_IMAGES = Array.from({ length: CURATED_COUNT }, (_, i) => ({
+  id: `c${i + 1}`,
+  url: `/curated/c${i + 1}.jpg`,
+}))
 
 const MAX_IMAGES = 5
 
@@ -235,25 +221,15 @@ export default function BuildPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-black">
-        {/* Particles from MistEffect fill this void — they become the animation */}
+      <main className="min-h-screen flex flex-col items-center justify-center bg-organic">
         <div className="flex flex-col items-center gap-5 text-center px-6">
-          <p
-            className="text-[9px] text-white/20 tracking-[0.6em] uppercase"
-            style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-          >
-            Scentesia
-          </p>
-          <p
-            className="text-3xl md:text-4xl text-white/60 font-light italic"
-            style={{ fontFamily: 'var(--font-cormorant), serif' }}
-          >
+          <Logo size={32} className="text-brand-subtitle/40 animate-pulse" />
+          <p className="text-brand-subtitle/60 text-sm tracking-wide">
             {loadingText}
           </p>
-          {/* Thin progress line */}
           <div className="w-16 h-px bg-white/10 overflow-hidden mt-2">
             <div
-              className="h-full bg-white/40 animate-pulse"
+              className="h-full bg-brand-teal animate-pulse"
               style={{ width: '60%' }}
             />
           </div>
@@ -262,42 +238,83 @@ export default function BuildPage() {
     )
   }
 
+  // Shared selection grid renderer
+  function renderImageGrid(
+    images: { id: string; url: string }[],
+    gridClass: string,
+    toggleFn: (id: string) => void,
+  ) {
+    return (
+      <div className={gridClass}>
+        {images.map((img, index) => {
+          const isSelected = selected.includes(img.id)
+          const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
+          return (
+            <button
+              key={img.id}
+              onClick={() => toggleFn(img.id)}
+              disabled={isDisabled}
+              className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
+              <img
+                src={img.url}
+                alt=""
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 animate-fade-in"
+              />
+              <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-brand-teal/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
+              {isSelected && <div className="absolute inset-0 border-2 border-brand-teal/60 rounded-xl" />}
+              {isSelected && (
+                <div className="absolute top-2 right-2 w-4 h-4 bg-brand-teal flex items-center justify-center rounded-sm">
+                  <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  function toggleImage(id: string) {
+    if (selected.includes(id)) {
+      setSelected(prev => prev.filter(s => s !== id))
+    } else if (totalSelected < MAX_IMAGES) {
+      setSelected(prev => [...prev, id])
+    }
+  }
+
   return (
-    <main className="min-h-screen bg-black pb-32">
+    <main className="min-h-screen bg-organic pb-32">
 
       {/* Header */}
       <div className="px-6 md:px-10 pt-10 pb-7 border-b border-white/8">
         <button
           onClick={() => router.push('/')}
-          className="text-white/30 text-[9px] tracking-[0.45em] uppercase mb-5 block hover:text-white/60 transition-colors"
-          style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+          className="flex items-center gap-2 text-white/30 text-[9px] tracking-[0.45em] uppercase mb-5 hover:text-white/60 transition-colors"
         >
-          ← Scentesia
+          <Logo size={14} className="text-current" />
+          <span>&larr; Scentesia</span>
         </button>
-        <h1
-          className="text-3xl md:text-4xl font-light text-white"
-          style={{ fontFamily: 'var(--font-cormorant), serif' }}
-        >
-          Build your vibe board
+        <h1 className="font-expanded text-3xl md:text-4xl font-light text-white">
+          Upload your world.
         </h1>
-        <p
-          className="text-white/30 text-sm mt-2 leading-relaxed"
-          style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-        >
-          Choose up to 5 images. Let instinct guide you.
+        <p className="text-brand-subtitle/50 text-sm mt-2 leading-relaxed">
+          We&apos;ll translate it into fragrance.
         </p>
-        {/* Tab toggle */}
-        <div className="flex gap-0 mt-6 border-b border-white/8">
+        {/* Tab toggle — glass pill */}
+        <div className="flex gap-1 mt-6 bg-white/4 backdrop-blur-sm rounded-xl p-1 w-fit border border-white/6">
           {(['curated', 'pinterest', 'instagram'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => switchTab(tab)}
-              className={`text-[9px] tracking-[0.35em] uppercase pb-3 pr-6 transition-colors duration-200 ${
+              className={`text-[9px] tracking-[0.25em] uppercase px-4 py-2 rounded-lg transition-all duration-200 ${
                 activeTab === tab
-                  ? 'text-white border-b border-white -mb-px'
-                  : 'text-white/25 hover:text-white/50'
+                  ? 'text-white bg-brand-teal/30'
+                  : 'text-white/30 hover:text-white/50'
               }`}
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
             >
               {tab === 'curated' ? 'Curated' : tab === 'pinterest' ? 'Pinterest' : 'Instagram'}
             </button>
@@ -309,12 +326,12 @@ export default function BuildPage() {
       {uploadedImages.length > 0 && (
         <div className="px-6 pt-5 flex gap-3 overflow-x-auto pb-1">
           {uploadedImages.map(img => (
-            <div key={img.id} className="relative flex-shrink-0 w-20 h-[60px] rounded-xl overflow-hidden border border-white/20">
+            <div key={img.id} className="relative flex-shrink-0 w-20 h-[60px] rounded-xl overflow-hidden border border-brand-teal/20">
               <img src={img.url} alt="uploaded" className="w-full h-full object-cover" />
               <button
                 onClick={() => removeUploaded(img.id)}
                 className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-black border border-white/20 rounded-full text-white/50 text-xs flex items-center justify-center hover:text-white transition-colors"
-              >×</button>
+              >&times;</button>
             </div>
           ))}
         </div>
@@ -322,20 +339,16 @@ export default function BuildPage() {
 
       {/* Counter + upload */}
       <div className="px-6 pt-5 flex items-center justify-between">
-        <span
-          className="text-white/40 text-sm"
-          style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-        >
+        <span className="text-brand-subtitle/60 text-sm">
           <span className="text-white font-medium">{totalSelected}</span>
-          <span className="text-white/20">/{MAX_IMAGES}</span>
-          <span className="ml-2 text-white/25 text-xs">selected</span>
+          <span className="text-brand-subtitle/30">/{MAX_IMAGES}</span>
+          <span className="ml-2 text-brand-subtitle/40 text-xs">selected</span>
         </span>
         {totalSelected < MAX_IMAGES && (
           <>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-[9px] text-white/50 tracking-[0.2em] uppercase border border-white/15 px-4 py-2 hover:border-white/40 hover:text-white/80 transition-all"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+              className="btn-glass"
             >
               + Upload yours
             </button>
@@ -345,46 +358,19 @@ export default function BuildPage() {
       </div>
 
       {error && (
-        <div className="mx-6 mt-4 px-4 py-3 border border-white/10 bg-white/4 text-white/50 text-xs"
-          style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-        >
+        <div className="mx-6 mt-4 px-4 py-3 border border-brand-teal/15 bg-brand-teal/5 text-brand-subtitle/70 text-xs rounded-xl">
           {error}
         </div>
       )}
 
-      {/* Blind vibe grid */}
+      {/* Curated grid — moodboard layout */}
       {activeTab === 'curated' && (
         <div className="pt-5">
-          <div className="vibe-grid">
-            {CURATED_IMAGES.map((img) => {
-              const isSelected = selected.includes(img.id)
-              const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
-
-              return (
-                <button
-                  key={img.id}
-                  onClick={() => toggleCurated(img.id)}
-                  disabled={isDisabled}
-                  className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
-                >
-                  <img
-                    src={img.url}
-                    alt=""
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
-                  {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
-                      <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
+          {renderImageGrid(
+            CURATED_IMAGES,
+            'moodboard-grid',
+            toggleCurated,
+          )}
         </div>
       )}
 
@@ -406,68 +392,26 @@ export default function BuildPage() {
               }}
               onKeyDown={e => e.key === 'Enter' && handlePinterestImport()}
               placeholder="Paste a Pinterest board URL"
-              className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-white/35 transition-colors rounded-xl"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+              className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl"
             />
             <button
               onClick={() => handlePinterestImport()}
               disabled={!isValidPinterestUrl(pinterestUrl) || pinterestLoading}
-              className="text-[9px] tracking-[0.25em] uppercase border border-white/15 px-5 py-2.5 rounded-xl text-white/50 hover:border-white/40 hover:text-white/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+              className="btn-glass"
             >
-              {pinterestLoading ? '···' : 'Import'}
+              {pinterestLoading ? '\u00b7\u00b7\u00b7' : 'Import'}
             </button>
           </div>
 
-          {/* Error */}
           {pinterestError && (
-            <p
-              className="text-white/35 text-xs mb-5"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-            >
+            <p className="text-brand-subtitle/50 text-xs mb-5">
               {pinterestError}
             </p>
           )}
 
-          {/* Pinterest image grid */}
           {pinterestImages.length > 0 && (
-            <div className="vibe-grid -mx-6">
-              {pinterestImages.map((img, index) => {
-                const isSelected = selected.includes(img.id)
-                const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
-                return (
-                  <button
-                    key={img.id}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelected(prev => prev.filter(s => s !== img.id))
-                      } else if (!isDisabled) {
-                        setSelected(prev => [...prev, img.id])
-                      }
-                    }}
-                    disabled={isDisabled}
-                    className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${
-                      isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'
-                    }`}
-                    style={{ animationDelay: `${index * 60}ms` }}
-                  >
-                    <img
-                      src={img.url}
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 animate-fade-in"
-                    />
-                    <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
-                    {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
-                        <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
+            <div className="-mx-6">
+              {renderImageGrid(pinterestImages, 'vibe-grid', toggleImage)}
             </div>
           )}
         </div>
@@ -492,26 +436,20 @@ export default function BuildPage() {
                 }}
                 onKeyDown={e => e.key === 'Enter' && handleInstagramImport()}
                 placeholder="Paste an Instagram post or reel URL"
-                className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-white/35 transition-colors rounded-xl"
-                style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl"
               />
               <button
                 onClick={() => handleInstagramImport()}
                 disabled={!isValidInstagramUrl(instagramUrl) || instagramLoading}
-                className="text-[9px] tracking-[0.25em] uppercase border border-white/15 px-5 py-2.5 rounded-xl text-white/50 hover:border-white/40 hover:text-white/80 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
-                style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                className="btn-glass"
               >
-                {instagramLoading ? '···' : 'Import'}
+                {instagramLoading ? '\u00b7\u00b7\u00b7' : 'Import'}
               </button>
             </div>
           )}
 
-          {/* Error */}
           {instagramError && (
-            <p
-              className="text-white/35 text-xs mb-5"
-              style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-            >
+            <p className="text-brand-subtitle/50 text-xs mb-5">
               {instagramError}
             </p>
           )}
@@ -520,10 +458,7 @@ export default function BuildPage() {
           {instagramType === 'single' && instagramImages.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-3">
-                <p
-                  className="text-white/25 text-[9px] tracking-[0.35em] uppercase"
-                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-                >
+                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.35em] uppercase">
                   Post imported
                 </p>
                 <button
@@ -533,10 +468,9 @@ export default function BuildPage() {
                     setInstagramUrl('')
                     setInstagramError(null)
                   }}
-                  className="text-white/25 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
-                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                  className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
                 >
-                  ✕ Clear
+                  &times; Clear
                 </button>
               </div>
               <div className="w-40 aspect-[4/3] rounded-xl overflow-hidden">
@@ -553,10 +487,7 @@ export default function BuildPage() {
           {instagramType === 'carousel' && instagramImages.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-3">
-                <p
-                  className="text-white/25 text-[9px] tracking-[0.35em] uppercase"
-                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
-                >
+                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.35em] uppercase">
                   {selected.length}/{Math.min(instagramImages.length, MAX_IMAGES - uploadedImages.length)} selected
                 </p>
                 <button
@@ -567,49 +498,13 @@ export default function BuildPage() {
                     setInstagramError(null)
                     setSelected([])
                   }}
-                  className="text-white/25 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
-                  style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+                  className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
                 >
-                  ✕ Clear
+                  &times; Clear
                 </button>
               </div>
-              <div className="vibe-grid -mx-6">
-                {instagramImages.map((img, index) => {
-                  const isSelected = selected.includes(img.id)
-                  const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
-                  return (
-                    <button
-                      key={img.id}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelected(prev => prev.filter(s => s !== img.id))
-                        } else if (!isDisabled) {
-                          setSelected(prev => [...prev, img.id])
-                        }
-                      }}
-                      disabled={isDisabled}
-                      className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${
-                        isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'
-                      }`}
-                      style={{ animationDelay: `${index * 60}ms` }}
-                    >
-                      <img
-                        src={img.url}
-                        alt=""
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 animate-fade-in"
-                      />
-                      <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-white/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
-                      {isSelected && <div className="absolute inset-0 border border-white/60 rounded-xl" />}
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-4 h-4 bg-white flex items-center justify-center">
-                          <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
-                            <path d="M1 4L3.5 6.5L9 1" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
+              <div className="-mx-6">
+                {renderImageGrid(instagramImages, 'vibe-grid', toggleImage)}
               </div>
             </div>
           )}
@@ -617,7 +512,7 @@ export default function BuildPage() {
       )}
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/95 backdrop-blur-sm border-t border-white/8">
+      <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/80 backdrop-blur-md border-t border-white/6">
         <button
           onClick={handleDiscover}
           disabled={
@@ -626,8 +521,7 @@ export default function BuildPage() {
             (activeTab === 'instagram' && instagramType === null) ||
             (activeTab !== 'instagram' && totalSelected === 0)
           }
-          className="w-full py-4 bg-white text-black text-[9px] tracking-[0.35em] uppercase font-medium rounded-xl disabled:opacity-15 disabled:cursor-not-allowed hover:bg-white/88 active:scale-[0.99] transition-all duration-200"
-          style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}
+          className="btn-glass-primary w-full py-4 rounded-xl"
         >
           {activeTab === 'instagram' && instagramType === null
             ? 'Import an Instagram post first'
@@ -639,7 +533,7 @@ export default function BuildPage() {
             ? 'Select images from the carousel'
             : totalSelected === 0
             ? 'Select at least one image'
-            : `Discover My Scent — ${totalSelected} selected`}
+            : `Discover My Scent \u2014 ${totalSelected} selected`}
         </button>
       </div>
 

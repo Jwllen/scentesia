@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { DM_Sans, Archivo } from "next/font/google";
 import { MistProvider } from "@/components/MistEffect";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  axes: ["wdth"],
 });
 
 const dmSans = DM_Sans({
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${cormorant.variable} ${dmSans.variable} antialiased bg-black text-white`} suppressHydrationWarning>
+      <body className={`${archivo.variable} ${dmSans.variable} antialiased bg-black text-white`} suppressHydrationWarning>
         <MistProvider>
           {children}
         </MistProvider>
