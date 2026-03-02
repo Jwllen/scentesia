@@ -363,14 +363,40 @@ export default function BuildPage() {
         </div>
       )}
 
-      {/* Curated grid — moodboard layout */}
+      {/* Curated grid — Pinterest-style masonry */}
       {activeTab === 'curated' && (
         <div className="pt-5">
-          {renderImageGrid(
-            CURATED_IMAGES,
-            'moodboard-grid',
-            toggleCurated,
-          )}
+          <div className="masonry-grid">
+            {CURATED_IMAGES.map((img, index) => {
+              const isSelected = selected.includes(img.id)
+              const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
+              return (
+                <button
+                  key={img.id}
+                  onClick={() => toggleCurated(img.id)}
+                  disabled={isDisabled}
+                  className={`relative overflow-hidden group transition-all duration-300 rounded-xl w-full ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <img
+                    src={img.url}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-auto block group-hover:scale-105 transition-transform duration-700 animate-fade-in rounded-xl"
+                  />
+                  <div className={`absolute inset-0 transition-all duration-300 rounded-xl ${isSelected ? 'bg-brand-teal/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
+                  {isSelected && <div className="absolute inset-0 border-2 border-brand-teal/60 rounded-xl" />}
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-4 h-4 bg-brand-teal flex items-center justify-center rounded-sm">
+                      <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 

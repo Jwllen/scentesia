@@ -230,29 +230,34 @@
   animation: grainShift 8s steps(10) infinite;
 }
 
-/* ─── Moodboard grid ─── */
+/* ─── Masonry grid (Pinterest-style columns) ─── */
 
-.moodboard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+.masonry-grid {
+  columns: 2;
+  column-gap: 8px;
   padding: 8px;
-  grid-auto-rows: minmax(120px, auto);
 }
 
-.moodboard-grid > *:nth-child(3n+1) {
-  grid-row: span 2;
+.masonry-grid > * {
+  break-inside: avoid;
+  margin-bottom: 8px;
 }
 
 @media (min-width: 640px) {
-  .moodboard-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .masonry-grid {
+    columns: 3;
   }
 }
 
 @media (min-width: 1024px) {
-  .moodboard-grid {
-    grid-template-columns: repeat(4, 1fr);
+  .masonry-grid {
+    columns: 4;
+  }
+}
+
+@media (min-width: 1280px) {
+  .masonry-grid {
+    columns: 5;
   }
 }
 
