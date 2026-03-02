@@ -11,24 +11,14 @@ export default function LandingPage() {
   return (
     <main className="grain-layer relative h-screen w-screen bg-organic overflow-hidden flex flex-col">
 
-      {/* Nav */}
-      <nav className="relative z-10 flex items-center justify-between px-8 md:px-12 pt-8">
-        <div className="flex items-center gap-3">
-          <Logo size={22} className="text-white/25" />
-          <span className="wordmark text-white/25 text-[9px]">
-            Scentesia
-          </span>
-        </div>
-        <span className="text-white/12 text-[9px] tracking-[0.3em] uppercase hidden md:block">
-          Est. 2026
-        </span>
-      </nav>
+      {/* Nav spacer */}
+      <div className="relative z-10 pt-8" />
 
       {/* Hero — vertically centered in remaining space */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
 
         <div className="animate-fade-in mb-6" style={{ animationDelay: '0ms' }}>
-          <Logo size={80} className="text-white/20" />
+          <Logo size={80} className="text-white" />
         </div>
 
         <h1

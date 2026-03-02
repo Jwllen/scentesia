@@ -232,7 +232,7 @@ export default function ResultsPage() {
         <p className="text-brand-subtitle/50 text-[9px] tracking-[0.35em] uppercase mb-3">
           Your Vibe
         </p>
-        <h1 className="font-expanded text-2xl md:text-3xl font-light text-white leading-snug max-w-2xl mb-5">
+        <h1 className="font-expanded text-2xl md:text-3xl font-light text-white leading-snug mb-5">
           &ldquo;{vibe.vibe_summary}&rdquo;
         </h1>
         <div className="flex flex-wrap gap-2">
