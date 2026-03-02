@@ -268,11 +268,12 @@ export default function ResultsPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {recommendations.map((rec, index) => {
-              const isBestMatch = index === 0
+              const isBestMatch = index === 0 && rec.match_score > 70
               return (
                 <TiltCard
                   key={rec.id}
                   onClick={() => setSelected(rec)}
+                  glowColor={isBestMatch ? 'rgba(251,191,36,0.45)' : undefined}
                   className={`text-left glass-card rounded-2xl group ${
                     isBestMatch
                       ? 'border-amber-400/30 shadow-[0_0_24px_rgba(251,191,36,0.12)] gold-pulse'
@@ -281,8 +282,8 @@ export default function ResultsPage() {
                 >
                   {/* Best Match badge */}
                   {isBestMatch && (
-                    <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/25">
-                      <span className="text-amber-400/90 text-[7px] tracking-[0.15em] uppercase font-medium">Best Match</span>
+                    <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded-full bg-amber-400/10 border border-amber-400/25 flex items-center justify-center leading-none">
+                      <span className="text-amber-400/90 text-[7px] tracking-[0.15em] uppercase font-medium leading-none">Best Match</span>
                     </div>
                   )}
                   {/* Bottle area */}

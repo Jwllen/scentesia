@@ -280,13 +280,8 @@
 
 /* ─── Gold Pulse (best match aura) ─── */
 
-@keyframes goldPulse {
-  0%, 100% { box-shadow: 0 0 24px rgba(251,191,36,0.12); }
-  50%      { box-shadow: 0 0 32px rgba(251,191,36,0.20); }
-}
-
 .gold-pulse {
-  animation: goldPulse 3s ease-in-out infinite;
+  box-shadow: 0 0 24px rgba(251,191,36,0.12);
 }
 
 /* ─── Scrollbar ─── */

@@ -7,9 +7,10 @@ interface TiltCardProps {
   className?: string
   onClick?: () => void
   maxTilt?: number
+  glowColor?: string
 }
 
-export function TiltCard({ children, className = '', onClick, maxTilt = 10 }: TiltCardProps) {
+export function TiltCard({ children, className = '', onClick, maxTilt = 10, glowColor = 'rgba(30,69,91,0.45)' }: TiltCardProps) {
   const cardRef   = useRef<HTMLDivElement>(null)
   const shineRef  = useRef<HTMLDivElement>(null)
   const borderRef = useRef<HTMLDivElement>(null)
@@ -51,12 +52,12 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10 }: Ti
     }
 
     if (border) {
-      // Glow follows cursor position around the border — teal tint
-      border.style.background = `radial-gradient(circle at ${cx * 100}% ${cy * 100}%, rgba(30,69,91,0.45) 0%, transparent 55%)`
+      // Glow follows cursor position around the border
+      border.style.background = `radial-gradient(circle at ${cx * 100}% ${cy * 100}%, ${glowColor} 0%, transparent 55%)`
       border.style.opacity    = '1'
       border.style.transition = 'opacity 0.06s linear'
     }
-  }, [maxTilt])
+  }, [maxTilt, glowColor])
 
   const handleMouseLeave = useCallback(() => {
     const el     = cardRef.current
