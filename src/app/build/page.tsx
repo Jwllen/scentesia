@@ -230,7 +230,7 @@ export default function BuildPage() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-organic">
         <div className="flex flex-col items-center gap-5 text-center px-6">
-          <Logo size={32} className="text-brand-subtitle/40 animate-pulse" />
+          <Logo size={32} className="text-brand-subtitle/60 animate-pulse" />
           <p className="text-brand-subtitle/60 text-sm tracking-wide">
             {loadingText}
           </p>
@@ -308,11 +308,11 @@ export default function BuildPage() {
         <h1 className="font-expanded text-3xl md:text-4xl font-light text-white">
           Upload your world.
         </h1>
-        <p className="text-brand-subtitle/50 text-sm mt-2 leading-relaxed">
+        <p className="text-brand-subtitle/60 text-sm mt-2 leading-relaxed">
           We&apos;ll translate it into fragrance.
         </p>
         {/* Tab toggle — glass pill */}
-        <div className="flex gap-1 mt-6 bg-white/4 backdrop-blur-sm rounded-xl p-1 w-fit border border-white/6">
+        <div className="flex gap-1 mt-6 glass-card rounded-xl p-1 w-fit">
           {(['curated', 'pinterest', 'instagram'] as const).map(tab => (
             <button
               key={tab}
@@ -348,8 +348,8 @@ export default function BuildPage() {
       <div className="px-6 pt-5 flex items-center justify-between">
         <span className="text-brand-subtitle/60 text-sm">
           <span className="text-white font-medium">{totalSelected}</span>
-          <span className="text-brand-subtitle/30">/{MAX_IMAGES}</span>
-          <span className="ml-2 text-brand-subtitle/40 text-xs">selected</span>
+          <span className="text-brand-subtitle/60">/{MAX_IMAGES}</span>
+          <span className="ml-2 text-brand-subtitle/60 text-xs">selected</span>
         </span>
         {totalSelected < MAX_IMAGES && (
           <>
@@ -491,7 +491,7 @@ export default function BuildPage() {
           {instagramType === 'single' && instagramImages.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.35em] uppercase">
+                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.35em] uppercase">
                   Post imported
                 </p>
                 <button
@@ -501,7 +501,7 @@ export default function BuildPage() {
                     setInstagramUrl('')
                     setInstagramError(null)
                   }}
-                  className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
+                  className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
                 >
                   &times; Clear
                 </button>
@@ -520,7 +520,7 @@ export default function BuildPage() {
           {instagramType === 'carousel' && instagramImages.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.35em] uppercase">
+                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.35em] uppercase">
                   {selected.length}/{Math.min(instagramImages.length, MAX_IMAGES - uploadedImages.length)} selected
                 </p>
                 <button
@@ -531,7 +531,7 @@ export default function BuildPage() {
                     setInstagramError(null)
                     setSelected([])
                   }}
-                  className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
+                  className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
                 >
                   &times; Clear
                 </button>

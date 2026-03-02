@@ -82,7 +82,7 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10 }: Ti
   return (
     <div
       ref={cardRef}
-      className={`relative overflow-hidden cursor-pointer ${className}`}
+      className={`relative overflow-hidden cursor-pointer backdrop-blur-md ${className}`}
       style={{ willChange: 'transform' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}

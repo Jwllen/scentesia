@@ -96,12 +96,12 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
   const { spray } = useMist()
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ position: 'fixed', zIndex: 50 }}>
       <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full md:max-w-md bg-gradient-to-b from-[#0a1a22] to-[#080808] border border-brand-teal/10 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-2xl">
+      <div className="relative w-full md:max-w-md bg-gradient-to-b from-[#0a1a22] to-[#080808] border border-brand-teal/15 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-2xl">
 
         {/* Bottle area */}
-        <div className="h-44 bg-transparent relative flex items-center justify-center border-b border-brand-teal/10">
+        <div className="h-44 bg-transparent relative flex items-center justify-center border-b border-brand-teal/15">
           <PerfumeBottleImage perfume={perfume} />
           <button
             onClick={onClose}
@@ -123,7 +123,7 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
             {formatName(perfume.name)}
           </h2>
 
-          <p className="text-white/40 text-sm leading-relaxed mb-6 italic border-l border-brand-teal/20 pl-4">
+          <p className="text-white/60 text-sm leading-relaxed mb-6 italic border-l border-brand-teal/20 pl-4">
             {perfume.match_reason}
           </p>
 
@@ -143,26 +143,26 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
           <div className="space-y-4 mb-6">
             {perfume.top_notes?.length > 0 && (
               <div>
-                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase mb-1.5">Top Notes</p>
+                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase mb-1.5">Top Notes</p>
                 <p className="text-white/70 text-sm">{perfume.top_notes.slice(0, 5).join(' \u00b7 ')}</p>
               </div>
             )}
             {perfume.heart_notes?.length > 0 && (
               <div>
-                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase mb-1.5">Heart Notes</p>
+                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase mb-1.5">Heart Notes</p>
                 <p className="text-white/70 text-sm">{perfume.heart_notes.slice(0, 5).join(' \u00b7 ')}</p>
               </div>
             )}
             {perfume.base_notes?.length > 0 && (
               <div>
-                <p className="text-brand-subtitle/40 text-[9px] tracking-[0.25em] uppercase mb-1.5">Base Notes</p>
+                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase mb-1.5">Base Notes</p>
                 <p className="text-white/70 text-sm">{perfume.base_notes.slice(0, 5).join(' \u00b7 ')}</p>
               </div>
             )}
           </div>
 
           {perfume.rating && (
-            <p className="text-brand-subtitle/40 text-xs mb-6">
+            <p className="text-brand-subtitle/60 text-xs mb-6">
               Rated <span className="text-white/60">{Number(perfume.rating).toFixed(1)}/5</span>
               {perfume.votes && ` \u00b7 ${Number(perfume.votes).toLocaleString()} reviews`}
             </p>
@@ -226,13 +226,13 @@ export default function ResultsPage() {
           <Logo size={14} className="text-current" />
           <span>&larr; Scentesia</span>
         </button>
-        <p className="text-brand-subtitle/50 text-sm leading-relaxed max-w-md mb-5">
+        <p className="text-brand-subtitle/60 text-sm leading-relaxed max-w-md mb-5">
           Based on your aesthetic, here are the scents that match your vibe...
         </p>
-        <p className="text-brand-subtitle/40 text-[9px] tracking-[0.35em] uppercase mb-3">
+        <p className="text-brand-subtitle/50 text-[9px] tracking-[0.35em] uppercase mb-3">
           Your Vibe
         </p>
-        <h1 className="font-expanded text-2xl md:text-3xl font-light text-white leading-snug max-w-sm mb-5">
+        <h1 className="font-expanded text-2xl md:text-3xl font-light text-white leading-snug max-w-2xl mb-5">
           &ldquo;{vibe.vibe_summary}&rdquo;
         </h1>
         <div className="flex flex-wrap gap-2">
@@ -249,7 +249,7 @@ export default function ResultsPage() {
 
       {/* Recommendations */}
       <div className="px-6 md:px-10 pt-8">
-        <p className="text-brand-subtitle/40 text-[9px] tracking-[0.4em] uppercase mb-6">
+        <p className="text-brand-subtitle/50 text-[9px] tracking-[0.4em] uppercase mb-6">
           Your Scents
         </p>
 
@@ -267,42 +267,55 @@ export default function ResultsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {recommendations.map((rec) => (
-              <TiltCard
-                key={rec.id}
-                onClick={() => setSelected(rec)}
-                className="text-left bg-brand-teal/[0.05] backdrop-blur-sm rounded-2xl group border border-brand-teal/10"
-              >
-                {/* Bottle area */}
-                <div className="h-36 bg-transparent relative overflow-hidden border-b border-brand-teal/8">
-                  <PerfumeBottleImage perfume={rec} />
-                  <div className="absolute top-2 right-2">
-                    <span className="text-brand-subtitle/50 text-[9px]">
-                      {rec.match_score}%
-                    </span>
-                  </div>
-                </div>
-                {/* Info */}
-                <div className="p-3.5">
-                  <p className="text-brand-subtitle/40 text-[8px] tracking-[0.15em] uppercase mb-0.5 truncate">
-                    {formatName(rec.brand)}
-                  </p>
-                  <h3 className="font-expanded text-base font-light text-white/80 group-hover:text-white transition-colors leading-tight truncate">
-                    {formatName(rec.name)}
-                  </h3>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {rec.matched_accords.slice(0, 2).map(accord => (
-                      <span
-                        key={accord}
-                        className="text-[7px] px-1.5 py-0.5 border border-brand-teal/15 text-brand-subtitle/40 rounded-full bg-brand-teal/5"
-                      >
-                        {accord}
+            {recommendations.map((rec, index) => {
+              const isBestMatch = index === 0
+              return (
+                <TiltCard
+                  key={rec.id}
+                  onClick={() => setSelected(rec)}
+                  className={`text-left glass-card rounded-2xl group ${
+                    isBestMatch
+                      ? 'border-amber-400/30 shadow-[0_0_24px_rgba(251,191,36,0.12)] gold-pulse'
+                      : ''
+                  }`}
+                >
+                  {/* Best Match badge */}
+                  {isBestMatch && (
+                    <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/25">
+                      <span className="text-amber-400/90 text-[7px] tracking-[0.15em] uppercase font-medium">Best Match</span>
+                    </div>
+                  )}
+                  {/* Bottle area */}
+                  <div className="h-36 bg-transparent relative overflow-hidden border-b border-brand-teal/8">
+                    <PerfumeBottleImage perfume={rec} />
+                    <div className="absolute top-2 right-2">
+                      <span className="text-brand-subtitle/60 text-[9px]">
+                        {rec.match_score}%
                       </span>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              </TiltCard>
-            ))}
+                  {/* Info */}
+                  <div className="p-3.5">
+                    <p className="text-brand-subtitle/60 text-[8px] tracking-[0.15em] uppercase mb-0.5 truncate">
+                      {formatName(rec.brand)}
+                    </p>
+                    <h3 className="font-expanded text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
+                      {formatName(rec.name)}
+                    </h3>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {rec.matched_accords.slice(0, 2).map(accord => (
+                        <span
+                          key={accord}
+                          className="text-[7px] px-1.5 py-0.5 border border-brand-teal/15 text-brand-subtitle/50 rounded-full bg-brand-teal/5"
+                        >
+                          {accord}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </TiltCard>
+              )
+            })}
           </div>
         )}
       </div>
@@ -310,38 +323,38 @@ export default function ResultsPage() {
       {/* Layering */}
       {layers.length > 0 && (
         <div className="px-6 md:px-10 pt-12">
-          <p className="text-brand-subtitle/40 text-[9px] tracking-[0.4em] uppercase mb-1">
+          <p className="text-brand-subtitle/50 text-[9px] tracking-[0.4em] uppercase mb-1">
             Layering
           </p>
-          <p className="text-brand-subtitle/40 text-xs mb-6">
+          <p className="text-brand-subtitle/60 text-xs mb-6">
             Combine for a scent that&apos;s uniquely yours.
           </p>
           <div className="space-y-3">
             {layers.map((layer, i) => (
-              <div key={i} className="p-5 bg-brand-teal/[0.05] rounded-xl border border-brand-teal/10 backdrop-blur-sm">
+              <div key={i} className="p-5 glass-card rounded-xl">
                 <div className="flex items-center gap-4 mb-3 flex-wrap">
                   <div>
-                    <p className="text-brand-subtitle/40 text-[8px] uppercase tracking-wider">
+                    <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
                       {layer.brand_1}
                     </p>
-                    <p className="font-expanded text-white/80 text-lg font-light">
+                    <p className="font-expanded text-white/90 text-lg font-light">
                       {layer.perfume_1}
                     </p>
                   </div>
                   <span className="text-brand-teal/40 text-lg">+</span>
                   <div>
-                    <p className="text-brand-subtitle/40 text-[8px] uppercase tracking-wider">
+                    <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
                       {layer.brand_2}
                     </p>
-                    <p className="font-expanded text-white/80 text-lg font-light">
+                    <p className="font-expanded text-white/90 text-lg font-light">
                       {layer.perfume_2}
                     </p>
                   </div>
                 </div>
-                <p className="text-brand-subtitle/50 text-xs leading-relaxed mb-1.5">
+                <p className="text-brand-subtitle/60 text-xs leading-relaxed mb-1.5">
                   {layer.effect}
                 </p>
-                <p className="text-white/50 text-xs leading-relaxed">
+                <p className="text-white/60 text-xs leading-relaxed">
                   {layer.apply}
                 </p>
               </div>

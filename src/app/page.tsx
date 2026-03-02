@@ -27,53 +27,34 @@ export default function LandingPage() {
       {/* Hero — vertically centered in remaining space */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
 
+        <div className="animate-fade-in mb-6" style={{ animationDelay: '0ms' }}>
+          <Logo size={80} className="text-white/20" />
+        </div>
+
+        <h1
+          className="animate-fade-up wordmark text-white text-4xl md:text-5xl mb-10 md:mb-14"
+          style={{ animationDelay: '120ms' }}
+        >
+          Scentesia
+        </h1>
+
         <p
           className="animate-fade-in text-brand-subtitle/50 text-[9px] tracking-[0.7em] uppercase mb-10 md:mb-14"
-          style={{ animationDelay: '0ms' }}
+          style={{ animationDelay: '260ms' }}
         >
           Redefine the way you discover fragrance
         </p>
 
-        <div className="flex flex-col items-center gap-0">
-          <h1
-            className="animate-fade-up font-expanded text-white font-light leading-[0.85] tracking-[-0.02em]"
-            style={{
-              fontSize: 'clamp(3rem, 8vw, 7.5rem)',
-              animationDelay: '120ms',
-            }}
-          >
-            You already know
-          </h1>
-          <h1
-            className="animate-fade-up font-expanded text-white font-light leading-[0.85] tracking-[-0.02em]"
-            style={{
-              fontSize: 'clamp(3rem, 8vw, 7.5rem)',
-              animationDelay: '260ms',
-            }}
-          >
-            what you want
-          </h1>
-          <h1
-            className="animate-fade-up font-expanded text-brand-subtitle font-light leading-[0.85] tracking-[-0.02em]"
-            style={{
-              fontSize: 'clamp(3rem, 8vw, 7.5rem)',
-              animationDelay: '400ms',
-            }}
-          >
-            to smell like.
-          </h1>
-        </div>
-
         <p
-          className="animate-fade-up text-brand-subtitle/60 text-lg font-light leading-relaxed max-w-[26rem] mt-10 md:mt-14"
-          style={{ animationDelay: '540ms' }}
+          className="animate-fade-up text-brand-subtitle/60 text-lg font-light leading-relaxed max-w-[26rem]"
+          style={{ animationDelay: '400ms' }}
         >
           Let us find it.
         </p>
 
         <div
           className="animate-fade-up mt-10 md:mt-12"
-          style={{ animationDelay: '680ms' }}
+          style={{ animationDelay: '540ms' }}
         >
           <button
             onClick={(e) => {

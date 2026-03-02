@@ -71,6 +71,7 @@
 .font-expanded {
   font-family: var(--font-archivo), sans-serif;
   font-variation-settings: 'wdth' 125;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 .wordmark {
@@ -209,14 +210,11 @@
 .grain-layer::after {
   content: '';
   position: fixed;
-  inset: -100%;
-  width: 300%;
-  height: 300%;
+  inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.04;
+  opacity: 0.03;
   pointer-events: none;
   z-index: 100;
-  animation: grainShift 8s steps(10) infinite;
 }
 
 /* ─── Masonry grid (Pinterest-style columns) ─── */
@@ -269,6 +267,26 @@
   .vibe-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+/* ─── Glass Card ─── */
+
+.glass-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── Gold Pulse (best match aura) ─── */
+
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 24px rgba(251,191,36,0.12); }
+  50%      { box-shadow: 0 0 32px rgba(251,191,36,0.20); }
+}
+
+.gold-pulse {
+  animation: goldPulse 3s ease-in-out infinite;
 }
 
 /* ─── Scrollbar ─── */
