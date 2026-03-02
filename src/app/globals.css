@@ -82,19 +82,6 @@
 
 .bg-organic {
   position: relative;
-  background: #000;
-}
-
-.bg-organic::before {
-  content: '';
-  position: fixed;
-  inset: -10%;
-  width: 120%;
-  height: 120%;
-  background: url('/background.png') center / cover no-repeat;
-  animation: bgDrift 30s ease-in-out infinite alternate;
-  z-index: 0;
-  pointer-events: none;
 }
 
 /* Push all direct children above the bg layer */

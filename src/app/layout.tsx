@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Archivo } from "next/font/google";
 import { MistProvider } from "@/components/MistEffect";
+import { OrganicBackground } from "@/components/OrganicBackground";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${archivo.variable} ${dmSans.variable} antialiased bg-black text-white`} suppressHydrationWarning>
+        <OrganicBackground />
         <MistProvider>
           {children}
         </MistProvider>
