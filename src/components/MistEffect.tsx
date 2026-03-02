@@ -265,7 +265,7 @@ export function MistProvider({ children }: { children: ReactNode }) {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none"
-        style={{ zIndex: 9999, mixBlendMode: 'screen' }}
+        style={{ zIndex: 0, mixBlendMode: 'screen' }}
       />
       {children}
     </MistContext.Provider>

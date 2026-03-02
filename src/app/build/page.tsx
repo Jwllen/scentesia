@@ -142,14 +142,21 @@ export default function BuildPage() {
       }
 
       const uploadedBase64 = uploadedImages.map(img => img.base64)
-      const allImages = [...uploadedBase64, ...tabUrls]
+      // Resolve relative paths (curated images) to absolute URLs for server-side fetch
+      const resolvedUrls = tabUrls.map(u =>
+        u.startsWith('/') ? `${window.location.origin}${u}` : u
+      )
+      const allImages = [...uploadedBase64, ...resolvedUrls]
 
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ images: allImages }),
       })
-      if (!analyzeRes.ok) throw new Error('Analysis failed')
+      if (!analyzeRes.ok) {
+        const errData = await analyzeRes.json().catch(() => ({}))
+        throw new Error(errData.error || `Analysis failed (${analyzeRes.status})`)
+      }
       const { vibe } = await analyzeRes.json()
 
       const recommendRes = await fetch('/api/recommend', {
@@ -538,7 +545,10 @@ export default function BuildPage() {
       )}
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/80 backdrop-blur-md border-t border-white/6">
+      <div
+        className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/80 backdrop-blur-md border-t border-white/6"
+        style={{ position: 'fixed', zIndex: 50 }}
+      >
         <button
           onClick={handleDiscover}
           disabled={

@@ -84,10 +84,12 @@
   position: relative;
 }
 
-/* Push all direct children above the bg layer */
-.bg-organic > * {
-  position: relative;
-  z-index: 1;
+/* Push non-fixed children above the bg layer */
+@layer base {
+  .bg-organic > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 @keyframes bgDrift {
