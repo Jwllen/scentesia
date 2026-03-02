@@ -39,6 +39,7 @@ export interface LayeringSuggestion {
   brand_2: string
   effect: string
   apply: string
+  combo_score: number
 }
 
 export interface CuratedImage {

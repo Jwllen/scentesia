@@ -11,6 +11,49 @@ function formatName(str: string): string {
   return str.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
+const ACCORD_COLORS: Record<string, { border: string; bg: string; text: string }> = {
+  // Citrus / fresh
+  citrus:    { border: 'border-yellow-400/30', bg: 'bg-yellow-400/8',  text: 'text-yellow-300/80' },
+  fresh:     { border: 'border-cyan-400/30',   bg: 'bg-cyan-400/8',    text: 'text-cyan-300/80' },
+  aromatic:  { border: 'border-emerald-400/30', bg: 'bg-emerald-400/8', text: 'text-emerald-300/80' },
+  green:     { border: 'border-green-400/30',  bg: 'bg-green-400/8',   text: 'text-green-300/80' },
+  aquatic:   { border: 'border-sky-400/30',    bg: 'bg-sky-400/8',     text: 'text-sky-300/80' },
+  marine:    { border: 'border-sky-400/30',    bg: 'bg-sky-400/8',     text: 'text-sky-300/80' },
+  // Floral
+  floral:    { border: 'border-pink-400/30',   bg: 'bg-pink-400/8',    text: 'text-pink-300/80' },
+  rose:      { border: 'border-rose-400/30',   bg: 'bg-rose-400/8',    text: 'text-rose-300/80' },
+  powdery:   { border: 'border-fuchsia-300/30', bg: 'bg-fuchsia-300/8', text: 'text-fuchsia-200/80' },
+  // Warm / spicy
+  warm:      { border: 'border-orange-400/30', bg: 'bg-orange-400/8',  text: 'text-orange-300/80' },
+  spicy:     { border: 'border-red-400/30',    bg: 'bg-red-400/8',     text: 'text-red-300/80' },
+  oriental:  { border: 'border-amber-400/30',  bg: 'bg-amber-400/8',   text: 'text-amber-300/80' },
+  amber:     { border: 'border-amber-400/30',  bg: 'bg-amber-400/8',   text: 'text-amber-300/80' },
+  // Woody / earthy
+  woody:     { border: 'border-yellow-700/30', bg: 'bg-yellow-700/8',  text: 'text-yellow-600/80' },
+  earthy:    { border: 'border-stone-400/30',  bg: 'bg-stone-400/8',   text: 'text-stone-300/80' },
+  musky:     { border: 'border-stone-400/30',  bg: 'bg-stone-400/8',   text: 'text-stone-300/80' },
+  leather:   { border: 'border-amber-700/30',  bg: 'bg-amber-700/8',   text: 'text-amber-600/80' },
+  smoky:     { border: 'border-zinc-400/30',   bg: 'bg-zinc-400/8',    text: 'text-zinc-300/80' },
+  oud:       { border: 'border-amber-700/30',  bg: 'bg-amber-700/8',   text: 'text-amber-600/80' },
+  // Sweet / gourmand
+  sweet:     { border: 'border-pink-300/30',   bg: 'bg-pink-300/8',    text: 'text-pink-200/80' },
+  vanilla:   { border: 'border-amber-200/30',  bg: 'bg-amber-200/8',   text: 'text-amber-100/80' },
+  gourmand:  { border: 'border-orange-300/30', bg: 'bg-orange-300/8',  text: 'text-orange-200/80' },
+  // Fruity
+  fruity:    { border: 'border-red-300/30',    bg: 'bg-red-300/8',     text: 'text-red-200/80' },
+  tropical:  { border: 'border-lime-400/30',   bg: 'bg-lime-400/8',    text: 'text-lime-300/80' },
+}
+
+const DEFAULT_ACCORD = { border: 'border-brand-teal/25', bg: 'bg-brand-teal/5', text: 'text-brand-subtitle/70' }
+
+function getAccordColor(accord: string) {
+  const key = accord.toLowerCase().trim()
+  for (const [k, v] of Object.entries(ACCORD_COLORS)) {
+    if (key.includes(k)) return v
+  }
+  return DEFAULT_ACCORD
+}
+
 function getPerfumeImageUrl(url?: string): string | null {
   if (!url) return null
   const match = url.match(/(\d+)\.html$/)
@@ -129,14 +172,17 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
 
           {/* Matched accords */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {perfume.matched_accords.map(accord => (
-              <span
-                key={accord}
-                className="text-[9px] px-2.5 py-1 border border-brand-teal/25 text-brand-subtitle/70 tracking-wide rounded-full bg-brand-teal/5"
-              >
-                {accord}
-              </span>
-            ))}
+            {perfume.matched_accords.map(accord => {
+              const c = getAccordColor(accord)
+              return (
+                <span
+                  key={accord}
+                  className={`text-[9px] px-2.5 py-1 border ${c.border} ${c.text} tracking-wide rounded-full ${c.bg}`}
+                >
+                  {accord}
+                </span>
+              )
+            })}
           </div>
 
           {/* Notes */}
@@ -221,37 +267,36 @@ export default function ResultsPage() {
       <div className="px-6 md:px-10 pt-10 pb-8 border-b border-white/8">
         <button
           onClick={() => router.push('/build')}
-          className="flex items-center gap-2 text-white/30 text-[9px] tracking-[0.45em] uppercase mb-6 hover:text-white/60 transition-colors"
+          className="mb-6 hover:opacity-80 transition-opacity"
         >
-          <Logo size={14} className="text-current" />
-          <span>&larr; Scentesia</span>
+          <Logo size={48} className="text-white" />
         </button>
-        <p className="text-brand-subtitle/60 text-sm leading-relaxed max-w-md mb-5">
-          Based on your aesthetic, here are the scents that match your vibe...
-        </p>
-        <p className="text-brand-subtitle/50 text-[9px] tracking-[0.35em] uppercase mb-3">
+        <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-3">
           Your Vibe
-        </p>
+        </h2>
         <h1 className="font-expanded text-2xl md:text-3xl font-light text-white leading-snug mb-5">
           &ldquo;{vibe.vibe_summary}&rdquo;
         </h1>
         <div className="flex flex-wrap gap-2">
-          {vibe.accords?.map(accord => (
-            <span
-              key={accord}
-              className="text-[9px] px-2.5 py-1 border border-brand-teal/25 text-brand-subtitle/60 tracking-wide rounded-full bg-brand-teal/5"
-            >
-              {accord}
-            </span>
-          ))}
+          {vibe.accords?.map(accord => {
+            const c = getAccordColor(accord)
+            return (
+              <span
+                key={accord}
+                className={`text-[9px] px-2.5 py-1 border ${c.border} ${c.text} tracking-wide rounded-full ${c.bg}`}
+              >
+                {accord}
+              </span>
+            )
+          })}
         </div>
       </div>
 
       {/* Recommendations */}
       <div className="px-6 md:px-10 pt-8">
-        <p className="text-brand-subtitle/50 text-[9px] tracking-[0.4em] uppercase mb-6">
+        <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-6">
           Your Scents
-        </p>
+        </h2>
 
         {recommendations.length === 0 ? (
           <div className="text-center py-16">
@@ -304,14 +349,17 @@ export default function ResultsPage() {
                       {formatName(rec.name)}
                     </h3>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {rec.matched_accords.slice(0, 2).map(accord => (
+                      {rec.matched_accords.slice(0, 2).map(accord => {
+                        const c = getAccordColor(accord)
+                        return (
                         <span
                           key={accord}
-                          className="text-[7px] px-1.5 py-0.5 border border-brand-teal/15 text-brand-subtitle/50 rounded-full bg-brand-teal/5"
+                          className={`text-[7px] px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
                         >
                           {accord}
                         </span>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 </TiltCard>
@@ -324,15 +372,22 @@ export default function ResultsPage() {
       {/* Layering */}
       {layers.length > 0 && (
         <div className="px-6 md:px-10 pt-12">
-          <p className="text-brand-subtitle/50 text-[9px] tracking-[0.4em] uppercase mb-1">
+          <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-1">
             Layering
-          </p>
+          </h2>
           <p className="text-brand-subtitle/60 text-xs mb-6">
             Combine for a scent that&apos;s uniquely yours.
           </p>
           <div className="space-y-3">
             {layers.map((layer, i) => (
-              <div key={i} className="p-5 glass-card rounded-xl">
+              <div key={i} className="p-5 glass-card rounded-xl relative">
+                {layer.combo_score > 0 && (
+                  <div className="absolute top-4 right-4 px-2 py-1 rounded-full bg-brand-teal/10 border border-brand-teal/20">
+                    <span className="text-brand-subtitle/70 text-[9px] tracking-[0.15em]">
+                      {layer.combo_score}% match
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-4 mb-3 flex-wrap">
                   <div>
                     <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
@@ -342,7 +397,7 @@ export default function ResultsPage() {
                       {layer.perfume_1}
                     </p>
                   </div>
-                  <span className="text-brand-teal/40 text-lg">+</span>
+                  <span className="text-white/60 text-2xl font-light">+</span>
                   <div>
                     <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
                       {layer.brand_2}

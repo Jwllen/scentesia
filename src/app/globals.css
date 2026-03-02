@@ -221,13 +221,13 @@
 
 .masonry-grid {
   columns: 2;
-  column-gap: 8px;
-  padding: 8px;
+  column-gap: 24px;
+  padding: 24px;
 }
 
 .masonry-grid > * {
   break-inside: avoid;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
 }
 
 @media (min-width: 640px) {
@@ -253,8 +253,8 @@
 .vibe-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  padding: 8px;
+  gap: 24px;
+  padding: 24px;
 }
 
 @media (min-width: 640px) {

@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
       return {
         ...perfume,
-        match_score: Math.round(score * 100),
+        match_score: Math.min(Math.round(score * 100), 100),
         matched_accords: matched,
         match_reason,
       } as PerfumeRecommendation

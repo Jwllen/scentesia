@@ -170,7 +170,7 @@ export default function BuildPage() {
       const layerRes = await fetch('/api/layer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recommendations }),
+        body: JSON.stringify({ recommendations, vibe }),
       })
       const { layers } = await layerRes.json()
 
@@ -261,16 +261,16 @@ export default function BuildPage() {
               key={img.id}
               onClick={() => toggleFn(img.id)}
               disabled={isDisabled}
-              className={`relative overflow-hidden group transition-all duration-300 rounded-xl aspect-[4/3] ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
+              className={`relative overflow-hidden group transition-all duration-300 rounded-2xl aspect-[4/3] hover:scale-105 hover:z-10 ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
               style={{ animationDelay: `${index * 60}ms` }}
             >
               <img
                 src={img.url}
                 alt=""
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 animate-fade-in"
+                className="w-full h-full object-cover transition-transform duration-700 animate-fade-in"
               />
               <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-brand-teal/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
-              {isSelected && <div className="absolute inset-0 border-2 border-brand-teal/60 rounded-xl" />}
+              {isSelected && <div className="absolute inset-0 border-2 border-brand-teal/60 rounded-2xl" />}
               {isSelected && (
                 <div className="absolute top-2 right-2 w-4 h-4 bg-brand-teal flex items-center justify-center rounded-sm">
                   <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
@@ -300,10 +300,9 @@ export default function BuildPage() {
       <div className="px-6 md:px-10 pt-10 pb-7 border-b border-white/8">
         <button
           onClick={() => router.push('/')}
-          className="flex items-center gap-2 text-white/30 text-[9px] tracking-[0.45em] uppercase mb-5 hover:text-white/60 transition-colors"
+          className="mb-5 hover:opacity-80 transition-opacity"
         >
-          <Logo size={14} className="text-current" />
-          <span>&larr; Scentesia</span>
+          <Logo size={48} className="text-white" />
         </button>
         <h1 className="font-expanded text-3xl md:text-4xl font-light text-white">
           Upload your world.
@@ -382,17 +381,17 @@ export default function BuildPage() {
                   key={img.id}
                   onClick={() => toggleCurated(img.id)}
                   disabled={isDisabled}
-                  className={`relative overflow-hidden group transition-all duration-300 rounded-xl w-full ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
+                  className={`relative overflow-hidden group transition-all duration-300 rounded-2xl w-full hover:scale-105 hover:z-10 ${isDisabled ? 'opacity-20 cursor-not-allowed' : 'opacity-100'}`}
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <img
                     src={img.url}
                     alt=""
                     loading="lazy"
-                    className="w-full h-auto block group-hover:scale-105 transition-transform duration-700 animate-fade-in rounded-xl"
+                    className="w-full h-auto block transition-transform duration-700 animate-fade-in rounded-2xl"
                   />
-                  <div className={`absolute inset-0 transition-all duration-300 rounded-xl ${isSelected ? 'bg-brand-teal/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
-                  {isSelected && <div className="absolute inset-0 border-2 border-brand-teal/60 rounded-xl" />}
+                  <div className={`absolute inset-0 transition-all duration-300 rounded-2xl ${isSelected ? 'bg-brand-teal/10' : 'bg-black/30 group-hover:bg-black/5'}`} />
+                  {isSelected && <div className="absolute inset-0 border-2 border-brand-teal/60 rounded-2xl" />}
                   {isSelected && (
                     <div className="absolute top-2 right-2 w-4 h-4 bg-brand-teal flex items-center justify-center rounded-sm">
                       <svg width="7" height="5" viewBox="0 0 10 8" fill="none">
