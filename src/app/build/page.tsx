@@ -61,6 +61,7 @@ export default function BuildPage() {
   const [uploadedImages, setUploadedImages] = useState<{ id: string; url: string; base64: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingText, setLoadingText] = useState('Reading your vibe...')
+  const [loadingPct, setLoadingPct] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'curated' | 'pinterest' | 'instagram'>('curated')
   const [pinterestUrl, setPinterestUrl] = useState('')
@@ -125,11 +126,33 @@ export default function BuildPage() {
 
     spray(e.currentTarget.getBoundingClientRect())
     setLoading(true)
+    setLoadingPct(0)
     setError(null)
 
-    const texts = ['Reading your vibe...', 'Finding your scent...', 'Almost there...']
-    let i = 0
-    const interval = setInterval(() => { i = (i + 1) % texts.length; setLoadingText(texts[i]) }, 2500)
+    // Accelerate the background mist
+    ;(window as unknown as Record<string, boolean>).__scentesiaLoading = true
+
+    // Staged messages — gets playful the longer the user waits
+    const stages = [
+      { at: 0,    text: 'Reading your vibe...' },
+      { at: 3000, text: 'Analyzing your aesthetic...' },
+      { at: 7000, text: 'Matching accords to your mood...' },
+      { at: 12000, text: 'Cross-referencing thousands of fragrances...' },
+      { at: 18000, text: 'Almost there, good scents take time...' },
+      { at: 25000, text: 'Still working — perfection can\'t be rushed...' },
+      { at: 33000, text: 'Your nose will thank you for the wait...' },
+      { at: 42000, text: 'Okay this is taking a while, bear with us...' },
+    ]
+    let stageIdx = 0
+    const startTime = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      // Advance message stage
+      while (stageIdx < stages.length - 1 && elapsed >= stages[stageIdx + 1].at) stageIdx++
+      setLoadingText(stages[stageIdx].text)
+      // Asymptotic percentage: approaches 95% but never reaches it
+      setLoadingPct(Math.min(95, Math.round((1 - Math.exp(-elapsed / 15000)) * 100)))
+    }, 500)
 
     try {
       let tabUrls: string[] = []
@@ -185,6 +208,8 @@ export default function BuildPage() {
       setLoading(false)
     } finally {
       clearInterval(interval)
+      setLoadingPct(100)
+      ;(window as unknown as Record<string, boolean>).__scentesiaLoading = false
     }
   }
 
@@ -231,19 +256,17 @@ export default function BuildPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-organic">
-        <div className="flex flex-col items-center gap-5 text-center px-6">
-          <Logo size={32} className="text-brand-subtitle/60 animate-pulse" />
-          <p className="text-brand-subtitle/60 text-sm tracking-wide">
+      <main className="min-h-screen flex flex-col items-center justify-center bg-organic relative">
+        <div className="flex flex-col items-center gap-6 text-center px-6">
+          <Logo size={40} className="text-white/80 animate-pulse" />
+          <p className="text-white/60 text-sm tracking-wide max-w-xs transition-opacity duration-500">
             {loadingText}
           </p>
-          <div className="w-16 h-px bg-white/10 overflow-hidden mt-2">
-            <div
-              className="h-full bg-brand-teal animate-pulse"
-              style={{ width: '60%' }}
-            />
-          </div>
         </div>
+        {/* Discreet percentage — bottom right */}
+        <span className="absolute bottom-6 right-6 text-white/20 text-[10px] tracking-widest tabular-nums">
+          {loadingPct}%
+        </span>
       </main>
     )
   }

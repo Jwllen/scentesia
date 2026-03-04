@@ -200,7 +200,10 @@ export function OrganicBackground() {
     let raf = 0
     const t0 = performance.now()
     const loop = (t: number) => {
+      const isLoading = !!(window as unknown as Record<string, boolean>).__scentesiaLoading
+      ;(program.uniforms.uTimeSpeed as { value: number }).value = isLoading ? 2.5 : 0.07
       ;(program.uniforms.iTime as { value: number }).value = (t - t0) * 0.001
+
       renderer.render({ scene: mesh })
       raf = requestAnimationFrame(loop)
     }
