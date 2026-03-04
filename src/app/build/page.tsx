@@ -175,14 +175,7 @@ export default function BuildPage() {
         body: JSON.stringify({ vibe }),
       })
       if (!recommendRes.ok) throw new Error('Recommendations failed')
-      const { recommendations } = await recommendRes.json()
-
-      const layerRes = await fetch('/api/layer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recommendations, vibe }),
-      })
-      const { layers } = await layerRes.json()
+      const { recommendations, layers } = await recommendRes.json()
 
       sessionStorage.setItem('scentesia_results', JSON.stringify({ vibe, recommendations, layers }))
       router.push('/results')
