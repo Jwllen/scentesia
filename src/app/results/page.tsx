@@ -318,17 +318,17 @@ export default function ResultsPage() {
                 <TiltCard
                   key={rec.id}
                   onClick={() => setSelected(rec)}
-                  glowColor={isBestMatch ? 'rgba(251,191,36,0.45)' : undefined}
+                  glowColor={isBestMatch ? 'rgba(251,191,36,0.7)' : undefined}
                   className={`text-left glass-card rounded-2xl group ${
                     isBestMatch
-                      ? 'border-amber-400/30 shadow-[0_0_24px_rgba(251,191,36,0.12)] gold-pulse'
+                      ? 'border-amber-400/50 gold-pulse'
                       : ''
                   }`}
                 >
                   {/* Best Match badge */}
                   {isBestMatch && (
-                    <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded-full bg-amber-400/10 border border-amber-400/25 flex items-center justify-center leading-none">
-                      <span className="text-amber-400/90 text-[7px] tracking-[0.15em] uppercase font-medium leading-none">Best Match</span>
+                    <div className="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/35 backdrop-blur-sm flex items-center justify-center leading-none">
+                      <span className="text-amber-300 text-[8px] tracking-[0.15em] uppercase font-semibold leading-none">Best Match</span>
                     </div>
                   )}
                   {/* Bottle area */}
