@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMist } from '@/components/MistEffect'
 import { Logo } from '@/components/Logo'
@@ -43,10 +43,20 @@ function isValidPinterestUrl(url: string): boolean {
   }
 }
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 export default function BuildPage() {
   const router = useRouter()
   const { spray } = useMist()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const shuffledCurated = useMemo(() => shuffleArray(CURATED_IMAGES), [])
   const [selected, setSelected] = useState<string[]>([])
   const [uploadedImages, setUploadedImages] = useState<{ id: string; url: string; base64: string }[]>([])
   const [loading, setLoading] = useState(false)
@@ -373,7 +383,7 @@ export default function BuildPage() {
       {activeTab === 'curated' && (
         <div className="pt-5">
           <div className="masonry-grid">
-            {CURATED_IMAGES.map((img, index) => {
+            {shuffledCurated.map((img, index) => {
               const isSelected = selected.includes(img.id)
               const isDisabled = !isSelected && totalSelected >= MAX_IMAGES
               return (
