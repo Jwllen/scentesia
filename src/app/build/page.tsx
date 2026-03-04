@@ -261,7 +261,7 @@ export default function BuildPage() {
       <main className="min-h-screen flex flex-col items-center justify-center bg-organic relative">
         <div className="flex flex-col items-center gap-6 text-center px-6">
           <Logo size={40} className="text-white/80 animate-pulse" />
-          <p className="text-white/60 text-sm tracking-wide max-w-xs transition-opacity duration-500">
+          <p className="text-white/60 text-xs sm:text-sm tracking-wide max-w-[240px] sm:max-w-xs transition-opacity duration-500">
             {loadingText}
           </p>
         </div>
@@ -332,7 +332,7 @@ export default function BuildPage() {
         >
           <Logo size={48} className="text-white" />
         </button>
-        <h1 className="font-expanded text-3xl md:text-4xl font-light text-white">
+        <h1 className="font-expanded text-2xl sm:text-3xl md:text-4xl font-light text-white">
           Upload your world.
         </h1>
         <p className="text-brand-subtitle/60 text-sm mt-2 leading-relaxed">
@@ -344,7 +344,7 @@ export default function BuildPage() {
             <button
               key={tab}
               onClick={() => switchTab(tab)}
-              className={`text-[9px] tracking-[0.25em] uppercase px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`text-[9px] tracking-[0.15em] sm:tracking-[0.25em] uppercase px-3 sm:px-4 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
                 activeTab === tab
                   ? 'text-white bg-brand-teal/30'
                   : 'text-white/30 hover:text-white/50'
@@ -360,7 +360,7 @@ export default function BuildPage() {
       {uploadedImages.length > 0 && (
         <div className="px-6 pt-5 flex gap-3 overflow-x-auto pb-1">
           {uploadedImages.map(img => (
-            <div key={img.id} className="relative flex-shrink-0 w-20 h-[60px] rounded-xl overflow-hidden border border-brand-teal/20">
+            <div key={img.id} className="relative flex-shrink-0 w-24 h-[80px] sm:w-20 sm:h-[60px] rounded-xl overflow-hidden border border-brand-teal/20">
               <img src={img.url} alt="uploaded" className="w-full h-full object-cover" />
               <button
                 onClick={() => removeUploaded(img.id)}
@@ -373,7 +373,7 @@ export default function BuildPage() {
 
       {/* Counter + upload */}
       <div className="px-6 pt-5 flex items-center justify-between">
-        <span className="text-brand-subtitle/60 text-sm">
+        <span className="text-brand-subtitle/60 text-xs sm:text-sm">
           <span className="text-white font-medium">{totalSelected}</span>
           <span className="text-brand-subtitle/60">/{MAX_IMAGES}</span>
           <span className="ml-2 text-brand-subtitle/60 text-xs">selected</span>
@@ -452,7 +452,7 @@ export default function BuildPage() {
               }}
               onKeyDown={e => e.key === 'Enter' && handlePinterestImport()}
               placeholder="Paste a Pinterest board URL"
-              className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl"
+              className="flex-1 bg-transparent border border-white/15 px-4 py-3 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
             />
             <button
               onClick={() => handlePinterestImport()}
@@ -496,7 +496,7 @@ export default function BuildPage() {
                 }}
                 onKeyDown={e => e.key === 'Enter' && handleInstagramImport()}
                 placeholder="Paste an Instagram post or reel URL"
-                className="flex-1 bg-transparent border border-white/15 px-4 py-2.5 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl"
+                className="flex-1 bg-transparent border border-white/15 px-4 py-3 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
               />
               <button
                 onClick={() => handleInstagramImport()}
@@ -573,8 +573,8 @@ export default function BuildPage() {
 
       {/* Sticky CTA */}
       <div
-        className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-black/80 backdrop-blur-md border-t border-white/6"
-        style={{ position: 'fixed', zIndex: 50 }}
+        className="fixed bottom-0 left-0 right-0 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-black/80 backdrop-blur-md border-t border-white/6"
+        style={{ position: 'fixed', zIndex: 40 }}
       >
         <button
           onClick={handleDiscover}

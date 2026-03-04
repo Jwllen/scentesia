@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useCallback, type ReactNode } from 'react'
+import { useRef, useCallback, useEffect, useState, type ReactNode } from 'react'
 
 interface TiltCardProps {
   children: ReactNode
@@ -14,16 +14,17 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10, glow
   const cardRef   = useRef<HTMLDivElement>(null)
   const shineRef  = useRef<HTMLDivElement>(null)
   const borderRef = useRef<HTMLDivElement>(null)
+  const [isTouch, setIsTouch] = useState(false)
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  useEffect(() => {
+    setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0)
+  }, [])
+
+  const applyTilt = useCallback((cx: number, cy: number) => {
     const el     = cardRef.current
     const shine  = shineRef.current
     const border = borderRef.current
     if (!el) return
-
-    const rect = el.getBoundingClientRect()
-    const cx   = (e.clientX - rect.left)  / rect.width   // 0 → 1
-    const cy   = (e.clientY - rect.top)   / rect.height   // 0 → 1
 
     const rotX = -(cy - 0.5) * maxTilt * 2
     const rotY =  (cx - 0.5) * maxTilt * 2
@@ -52,14 +53,34 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10, glow
     }
 
     if (border) {
-      // Glow follows cursor position around the border
       border.style.background = `radial-gradient(circle at ${cx * 100}% ${cy * 100}%, ${glowColor} 0%, transparent 55%)`
       border.style.opacity    = '1'
       border.style.transition = 'opacity 0.06s linear'
     }
   }, [maxTilt, glowColor])
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTouch) return
+    const el = cardRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    applyTilt(
+      (e.clientX - rect.left) / rect.width,
+      (e.clientY - rect.top)  / rect.height,
+    )
+  }, [isTouch, applyTilt])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const el = cardRef.current
+    if (!el || !e.touches[0]) return
+    const rect = el.getBoundingClientRect()
+    applyTilt(
+      (e.touches[0].clientX - rect.left) / rect.width,
+      (e.touches[0].clientY - rect.top)  / rect.height,
+    )
+  }, [applyTilt])
+
+  const resetTilt = useCallback(() => {
     const el     = cardRef.current
     const shine  = shineRef.current
     const border = borderRef.current
@@ -86,7 +107,9 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10, glow
       className={`relative overflow-hidden cursor-pointer backdrop-blur-md ${className}`}
       style={{ willChange: 'transform' }}
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={resetTilt}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={resetTilt}
       onClick={onClick}
     >
       {children}

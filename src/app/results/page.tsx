@@ -148,7 +148,7 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
           <PerfumeBottleImage perfume={perfume} />
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/40 hover:text-white/80 text-2xl leading-none transition-colors"
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center text-white/40 hover:text-white/80 text-2xl leading-none transition-colors"
           >&times;</button>
           {/* Score badge */}
           <div className="absolute bottom-4 left-4 px-2 py-1 border border-brand-teal/20 rounded-full bg-brand-teal/5 backdrop-blur-sm">
@@ -158,11 +158,11 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
           </div>
         </div>
 
-        <div className="p-7">
+        <div className="px-4 py-5 sm:px-7 sm:py-7">
           <p className="text-brand-subtitle/50 text-[9px] tracking-[0.25em] uppercase mb-1">
             {formatName(perfume.brand)}
           </p>
-          <h2 className="font-expanded text-3xl font-light text-white mb-5">
+          <h2 className="font-expanded text-xl sm:text-2xl md:text-3xl font-light text-white mb-5">
             {formatName(perfume.name)}
           </h2>
 
@@ -274,7 +274,7 @@ export default function ResultsPage() {
         <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-3">
           Your Vibe
         </h2>
-        <h1 className="font-expanded text-2xl md:text-3xl font-light text-white leading-snug mb-5">
+        <h1 className="font-expanded text-lg sm:text-2xl md:text-3xl font-light text-white leading-snug mb-5">
           &ldquo;{vibe.vibe_summary}&rdquo;
         </h1>
         <div className="flex flex-wrap gap-2">
@@ -311,7 +311,7 @@ export default function ResultsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
             {recommendations.map((rec, index) => {
               const isBestMatch = index === 0 && rec.match_score > 70
               return (
@@ -345,7 +345,7 @@ export default function ResultsPage() {
                     <p className="text-brand-subtitle/60 text-[8px] tracking-[0.15em] uppercase mb-0.5 truncate">
                       {formatName(rec.brand)}
                     </p>
-                    <h3 className="font-expanded text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
+                    <h3 className="font-expanded text-sm sm:text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
                       {formatName(rec.name)}
                     </h3>
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -388,21 +388,21 @@ export default function ResultsPage() {
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-4 mb-3 flex-wrap">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
                   <div>
                     <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
                       {layer.brand_1}
                     </p>
-                    <p className="font-expanded text-white/90 text-lg font-light">
+                    <p className="font-expanded text-white/90 text-base sm:text-lg font-light">
                       {layer.perfume_1}
                     </p>
                   </div>
-                  <span className="text-white/60 text-2xl font-light">+</span>
+                  <span className="text-white/60 text-xl sm:text-2xl font-light">+</span>
                   <div>
                     <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
                       {layer.brand_2}
                     </p>
-                    <p className="font-expanded text-white/90 text-lg font-light">
+                    <p className="font-expanded text-white/90 text-base sm:text-lg font-light">
                       {layer.perfume_2}
                     </p>
                   </div>
