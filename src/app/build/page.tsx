@@ -60,7 +60,7 @@ export default function BuildPage() {
   const [selected, setSelected] = useState<string[]>([])
   const [uploadedImages, setUploadedImages] = useState<{ id: string; url: string; base64: string }[]>([])
   const [loading, setLoading] = useState(false)
-  const [loadingText, setLoadingText] = useState('Reading your vibe...')
+  const [loadingText, setLoadingText] = useState('Analyzing your vibe...')
   const [loadingPct, setLoadingPct] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'curated' | 'pinterest' | 'instagram'>('curated')
@@ -134,14 +134,16 @@ export default function BuildPage() {
 
     // Staged messages — gets playful the longer the user waits
     const stages = [
-      { at: 0,    text: 'Reading your vibe...' },
-      { at: 3000, text: 'Analyzing your aesthetic...' },
-      { at: 7000, text: 'Matching accords to your mood...' },
-      { at: 12000, text: 'Cross-referencing thousands of fragrances...' },
-      { at: 18000, text: 'Almost there, good scents take time...' },
-      { at: 25000, text: 'Still working — perfection can\'t be rushed...' },
-      { at: 33000, text: 'Your nose will thank you for the wait...' },
-      { at: 42000, text: 'Okay this is taking a while, bear with us...' },
+      { at: 0,     text: 'Analyzing your vibe...' },
+      { at: 3000,  text: 'Finding your scents...' },
+      { at: 7000,  text: 'Curating layering combos\u2026' },
+      { at: 12000, text: 'Your taste is impeccable, this might take a sec\u2026' },
+      { at: 18000, text: 'Okay, your vibe is very specific. We respect that...' },
+      { at: 25000, text: 'We\u2019d rush, but you deserve better than that\u2026' },
+      { at: 33000, text: 'If it makes you feel better, basic people load instantly.' },
+      { at: 42000, text: 'We could give you generic picks in 2 seconds. But you\u2019d never forgive us.' },
+      { at: 52000, text: 'If this were easy, you wouldn\u2019t be interesting.' },
+      { at: 63000, text: 'Speed is for people who smell like everyone else.' },
     ]
     let stageIdx = 0
     const startTime = Date.now()
