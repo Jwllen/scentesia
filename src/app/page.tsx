@@ -29,7 +29,7 @@ export default function LandingPage() {
         </h1>
 
         <p
-          className="animate-fade-in text-brand-subtitle/50 text-[9px] tracking-[0.7em] uppercase mb-10 md:mb-14"
+          className="animate-fade-in text-brand-subtitle/50 text-lg md:text-2xl tracking-[0.4em] uppercase mb-10 md:mb-14"
           style={{ animationDelay: '260ms' }}
         >
           Fragrance, finally in your language.
