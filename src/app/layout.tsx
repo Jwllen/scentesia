@@ -17,7 +17,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Scentesia — Find Your Unique Scent",
+  title: "Scentesia",
   description: "Upload images that represent your vibe and discover the perfumes that match your world.",
 };
 

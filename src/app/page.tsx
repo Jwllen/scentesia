@@ -32,14 +32,14 @@ export default function LandingPage() {
           className="animate-fade-in text-brand-subtitle/50 text-[9px] tracking-[0.7em] uppercase mb-10 md:mb-14"
           style={{ animationDelay: '260ms' }}
         >
-          Redefine the way you discover fragrance
+          Fragrance, finally in your language.
         </p>
 
         <p
           className="animate-fade-up text-brand-subtitle/60 text-lg font-light leading-relaxed max-w-[26rem]"
           style={{ animationDelay: '400ms' }}
         >
-          Let us find it.
+          Your aesthetic has a scent. We found it.
         </p>
 
         <div
