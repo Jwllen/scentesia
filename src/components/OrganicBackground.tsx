@@ -223,8 +223,7 @@ export function OrganicBackground() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-      style={{ opacity: 0.999 }}
+      className="bg-canvas-fullscreen"
       aria-hidden="true"
     />
   )
