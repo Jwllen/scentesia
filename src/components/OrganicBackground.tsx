@@ -224,6 +224,7 @@ export function OrganicBackground() {
     <div
       ref={containerRef}
       className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      style={{ opacity: 0.999 }}
       aria-hidden="true"
     />
   )
