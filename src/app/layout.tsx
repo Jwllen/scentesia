@@ -31,7 +31,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body className={`${archivo.variable} ${dmSans.variable} antialiased bg-black text-white`} suppressHydrationWarning>
+      <body className={`${archivo.variable} ${dmSans.variable} antialiased bg-background text-white`} suppressHydrationWarning>
         <OrganicBackground />
         <MistProvider>
           {children}

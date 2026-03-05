@@ -223,8 +223,7 @@ export function OrganicBackground() {
   return (
     <div
       ref={containerRef}
-      className="fixed z-0 pointer-events-none overflow-hidden"
-      style={{ top: '-50px', left: '-50px', right: '-50px', bottom: '-50px' }}
+      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
       aria-hidden="true"
     />
   )
