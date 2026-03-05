@@ -9,7 +9,7 @@ export default function LandingPage() {
   const { spray } = useMist()
 
   return (
-    <main className="grain-layer relative h-screen w-screen bg-organic overflow-hidden flex flex-col">
+    <main className="grain-layer relative w-screen bg-organic overflow-hidden flex flex-col" style={{ height: '100dvh', position: 'fixed', inset: 0, zIndex: 1 }}>
 
       {/* Nav spacer */}
       <div className="relative z-10 pt-8" />
