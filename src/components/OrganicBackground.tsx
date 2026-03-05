@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { Renderer, Program, Mesh, Triangle } from 'ogl'
 
 /**
  * WebGL organic background — Grainient-based shader with dark teal colorway,
  * slow warp, noise-driven rotation, and film grain.
  * Remixed from ReactBits Grainient component.
+ *
+ * The canvas is appended directly to document.body and sized to
+ * window.screen dimensions to cover the full physical screen on iOS.
  */
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -129,11 +132,7 @@ void main() {
 `
 
 export function OrganicBackground() {
-  const containerRef = useRef<HTMLDivElement | null>(null)
-
   useEffect(() => {
-    if (!containerRef.current) return
-
     const renderer = new Renderer({
       webgl: 2,
       alpha: true,
@@ -143,12 +142,21 @@ export function OrganicBackground() {
 
     const gl = renderer.gl
     const canvas = gl.canvas as HTMLCanvasElement
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    canvas.style.display = 'block'
 
-    const container = containerRef.current
-    container.appendChild(canvas)
+    // Style the canvas directly — bypass CSS layout entirely
+    Object.assign(canvas.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100vw',
+      height: '100vh',
+      zIndex: '0',
+      pointerEvents: 'none',
+      display: 'block',
+    })
+
+    // Append directly to body (not inside a container div)
+    document.body.prepend(canvas)
 
     const geometry = new Triangle(gl)
     const program = new Program(gl, {
@@ -184,17 +192,17 @@ export function OrganicBackground() {
     const mesh = new Mesh(gl, { geometry, program })
 
     const setSize = () => {
-      const rect = container.getBoundingClientRect()
-      const width = Math.max(1, Math.floor(rect.width))
-      const height = Math.max(1, Math.floor(rect.height))
-      renderer.setSize(width, height)
+      // Use the largest available dimension to cover the full physical screen
+      const w = Math.max(window.innerWidth, window.screen.width, document.documentElement.clientWidth)
+      const h = Math.max(window.innerHeight, window.screen.height, document.documentElement.clientHeight)
+      renderer.setSize(Math.floor(w), Math.floor(h))
       const res = (program.uniforms.iResolution as { value: Float32Array }).value
       res[0] = gl.drawingBufferWidth
       res[1] = gl.drawingBufferHeight
     }
 
-    const ro = new ResizeObserver(setSize)
-    ro.observe(container)
+    window.addEventListener('resize', setSize)
+    window.addEventListener('orientationchange', setSize)
     setSize()
 
     let raf = 0
@@ -211,20 +219,16 @@ export function OrganicBackground() {
 
     return () => {
       cancelAnimationFrame(raf)
-      ro.disconnect()
+      window.removeEventListener('resize', setSize)
+      window.removeEventListener('orientationchange', setSize)
       try {
-        container.removeChild(canvas)
+        document.body.removeChild(canvas)
       } catch {
         // Ignore
       }
     }
   }, [])
 
-  return (
-    <div
-      ref={containerRef}
-      className="bg-canvas-fullscreen"
-      aria-hidden="true"
-    />
-  )
+  // No wrapper div — canvas is appended directly to body
+  return null
 }
