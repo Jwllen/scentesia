@@ -306,6 +306,16 @@
   50%      { box-shadow: 0 0 36px rgba(251,191,36,0.50), 0 0 90px rgba(251,191,36,0.18); }
 }
 
+/* ─── Fullscreen background (covers safe areas on iOS) ─── */
+
+.bg-fullscreen {
+  top: calc(-1 * env(safe-area-inset-top, 0px));
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  height: calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+}
+
 /* ─── Scrollbar ─── */
 
 ::-webkit-scrollbar { width: 2px; }
