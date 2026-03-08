@@ -24,7 +24,7 @@ function isValidInstagramUrl(url: string): boolean {
       h !== 'www.instagr.am'
     ) return false
     const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean)
-    return parts.length >= 2 && (parts[0] === 'p' || parts[0] === 'reel')
+    return parts.length >= 2 && (parts[0] === 'p' || parts[0] === 'reel' || parts[0] === 'reels')
   } catch {
     return false
   }
@@ -38,6 +38,18 @@ function isValidPinterestUrl(url: string): boolean {
     if (!u.hostname.includes('pinterest')) return false
     const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean)
     return parts.length >= 2
+  } catch {
+    return false
+  }
+}
+
+function isValidTiktokUrl(url: string): boolean {
+  try {
+    const u = new URL(url.trim())
+    const h = u.hostname
+    if (h === 'vm.tiktok.com') return true
+    if (!h.includes('tiktok.com')) return false
+    return u.pathname.includes('/video/')
   } catch {
     return false
   }
@@ -63,20 +75,24 @@ export default function BuildPage() {
   const [loadingText, setLoadingText] = useState('Analyzing your vibe...')
   const [loadingPct, setLoadingPct] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'curated' | 'pinterest' | 'instagram'>('curated')
+  const [activeTab, setActiveTab] = useState<'curated' | 'pinterest' | 'instagram' | 'tiktok'>('curated')
   const [pinterestUrl, setPinterestUrl] = useState('')
   const [pinterestImages, setPinterestImages] = useState<{ id: string; url: string }[]>([])
   const [pinterestLoading, setPinterestLoading] = useState(false)
   const [pinterestError, setPinterestError] = useState<string | null>(null)
   const [instagramUrl, setInstagramUrl] = useState('')
   const [instagramImages, setInstagramImages] = useState<{ id: string; url: string }[]>([])
-  const [instagramType, setInstagramType] = useState<'single' | 'carousel' | null>(null)
+  const [instagramType, setInstagramType] = useState<'single' | 'carousel' | 'reel' | null>(null)
   const [instagramLoading, setInstagramLoading] = useState(false)
   const [instagramError, setInstagramError] = useState<string | null>(null)
+  const [tiktokUrl, setTiktokUrl] = useState('')
+  const [tiktokImages, setTiktokImages] = useState<{ id: string; url: string }[]>([])
+  const [tiktokLoading, setTiktokLoading] = useState(false)
+  const [tiktokError, setTiktokError] = useState<string | null>(null)
 
   const totalSelected = selected.length + uploadedImages.length
 
-  function switchTab(tab: 'curated' | 'pinterest' | 'instagram') {
+  function switchTab(tab: 'curated' | 'pinterest' | 'instagram' | 'tiktok') {
     setActiveTab(tab)
     setSelected([])
     if (tab !== 'instagram') {
@@ -84,6 +100,11 @@ export default function BuildPage() {
       setInstagramType(null)
       setInstagramError(null)
       setInstagramUrl('')
+    }
+    if (tab !== 'tiktok') {
+      setTiktokImages([])
+      setTiktokError(null)
+      setTiktokUrl('')
     }
   }
 
@@ -119,9 +140,10 @@ export default function BuildPage() {
 
   async function handleDiscover(e: React.MouseEvent<HTMLButtonElement>) {
     const canDiscover =
-      (activeTab === 'instagram' && instagramType === 'single' && instagramImages.length > 0) ||
-      (activeTab === 'instagram' && instagramType === 'carousel' && selected.length > 0) ||
-      (activeTab !== 'instagram' && totalSelected > 0)
+      (activeTab === 'instagram' && instagramImages.length > 0) ||
+      (activeTab === 'pinterest' && pinterestImages.length > 0) ||
+      (activeTab === 'tiktok' && tiktokImages.length > 0) ||
+      (activeTab === 'curated' && totalSelected > 0)
     if (!canDiscover) return
 
     spray(e.currentTarget.getBoundingClientRect())
@@ -163,21 +185,14 @@ export default function BuildPage() {
           .map(id => CURATED_IMAGES.find(c => c.id === id)?.url)
           .filter((u): u is string => u !== undefined)
       } else if (activeTab === 'pinterest') {
-        tabUrls = selected
-          .map(id => pinterestImages.find(p => p.id === id)?.url)
-          .filter((u): u is string => u !== undefined)
+        tabUrls = pinterestImages.map(img => img.url)
+      } else if (activeTab === 'tiktok') {
+        tabUrls = tiktokImages.map(img => img.url)
       } else if (activeTab === 'instagram') {
-        if (instagramType === 'carousel') {
-          tabUrls = instagramImages
-            .filter(img => selected.includes(img.id))
-            .map(img => img.url)
-        } else {
-          tabUrls = instagramImages.map(img => img.url)
-        }
+        tabUrls = instagramImages.map(img => img.url)
       }
 
       const uploadedBase64 = uploadedImages.map(img => img.base64)
-      // Resolve relative paths (curated images) to absolute URLs for server-side fetch
       const resolvedUrls = tabUrls.map(u =>
         u.startsWith('/') ? `${window.location.origin}${u}` : u
       )
@@ -256,17 +271,36 @@ export default function BuildPage() {
     }
   }
 
+  async function handleTiktokImport(urlOverride?: string) {
+    const urlToUse = urlOverride ?? tiktokUrl
+    if (!isValidTiktokUrl(urlToUse)) return
+    setTiktokLoading(true)
+    setTiktokError(null)
+    setTiktokImages([])
+
+    try {
+      const res = await fetch(`/api/tiktok?url=${encodeURIComponent(urlToUse)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch video')
+      setTiktokImages(data.images)
+    } catch (err) {
+      setTiktokError(err instanceof Error ? err.message : 'Something went wrong.')
+    } finally {
+      setTiktokLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-organic relative">
         <div className="flex flex-col items-center gap-6 text-center px-6">
           <Logo size={40} className="text-white/80 animate-pulse" />
-          <p className="text-white/60 text-xs sm:text-sm tracking-wide max-w-[240px] sm:max-w-xs transition-opacity duration-500">
+          <p className="text-white/70 text-base tracking-wide max-w-[240px] sm:max-w-xs transition-opacity duration-500">
             {loadingText}
           </p>
         </div>
         {/* Discreet percentage — bottom right */}
-        <span className="absolute bottom-6 right-6 text-white/20 text-[10px] tracking-widest tabular-nums">
+        <span className="absolute bottom-6 right-6 text-white/40 text-sm tracking-widest tabular-nums">
           {loadingPct}%
         </span>
       </main>
@@ -332,27 +366,31 @@ export default function BuildPage() {
         >
           <Logo size={48} className="text-white" />
         </button>
-        <h1 className="font-expanded text-2xl sm:text-3xl md:text-4xl font-light text-white">
-          Upload your world.
-        </h1>
-        <p className="text-brand-subtitle/60 text-sm mt-2 leading-relaxed">
-          We&apos;ll translate it into fragrance.
-        </p>
-        {/* Tab toggle — glass pill */}
-        <div className="flex gap-1 mt-6 glass-card rounded-xl p-1 w-fit">
-          {(['curated', 'pinterest', 'instagram'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => switchTab(tab)}
-              className={`text-[9px] tracking-[0.15em] sm:tracking-[0.25em] uppercase px-3 sm:px-4 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
-                activeTab === tab
-                  ? 'text-white bg-brand-teal/30'
-                  : 'text-white/30 hover:text-white/50'
-              }`}
-            >
-              {tab === 'curated' ? 'Curated' : tab === 'pinterest' ? 'Pinterest' : 'Instagram'}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-expanded text-2xl sm:text-3xl md:text-4xl font-light text-white">
+              Upload your world.
+            </h1>
+            <p className="text-brand-subtitle/80 text-base mt-2 leading-relaxed">
+              We&apos;ll translate it into fragrance.
+            </p>
+            {/* Tab toggle */}
+            <div className="flex gap-1 mt-6 glass-card rounded-xl p-1 w-fit">
+              {(['curated', 'pinterest', 'instagram', 'tiktok'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => switchTab(tab)}
+                  className={`text-base tracking-[0.15em] sm:tracking-[0.25em] uppercase px-3 sm:px-4 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
+                    activeTab === tab
+                      ? 'text-white bg-brand-teal/30'
+                      : 'text-white/50 hover:text-white/70'
+                  }`}
+                >
+                  {tab === 'curated' ? 'Curated' : tab === 'pinterest' ? 'Pinterest' : tab === 'instagram' ? 'Instagram' : 'TikTok'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -364,35 +402,37 @@ export default function BuildPage() {
               <img src={img.url} alt="uploaded" className="w-full h-full object-cover" />
               <button
                 onClick={() => removeUploaded(img.id)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-black border border-white/20 rounded-full text-white/50 text-xs flex items-center justify-center hover:text-white transition-colors"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-black border border-white/20 rounded-full text-white/50 text-base flex items-center justify-center hover:text-white transition-colors"
               >&times;</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Counter + upload */}
-      <div className="px-6 pt-5 flex items-center justify-between">
-        <span className="text-brand-subtitle/60 text-xs sm:text-sm">
-          <span className="text-white font-medium">{totalSelected}</span>
-          <span className="text-brand-subtitle/60">/{MAX_IMAGES}</span>
-          <span className="ml-2 text-brand-subtitle/60 text-xs">selected</span>
-        </span>
-        {totalSelected < MAX_IMAGES && (
-          <>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-glass"
-            >
-              + Upload yours
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
-          </>
-        )}
-      </div>
+      {/* Counter + upload (hidden on TikTok tab) */}
+      {activeTab !== 'tiktok' && activeTab !== 'instagram' && activeTab !== 'pinterest' && (
+        <div className="px-6 pt-5 flex items-center justify-between">
+          <span className="text-brand-subtitle/80 text-base">
+            <span className="text-white font-medium">{totalSelected}</span>
+            <span className="text-brand-subtitle/80">/{MAX_IMAGES}</span>
+            <span className="ml-2 text-brand-subtitle/80">selected</span>
+          </span>
+          {totalSelected < MAX_IMAGES && (
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-glass"
+              >
+                + Upload yours
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
+            </>
+          )}
+        </div>
+      )}
 
       {error && (
-        <div className="mx-6 mt-4 px-4 py-3 border border-brand-teal/15 bg-brand-teal/5 text-brand-subtitle/70 text-xs rounded-xl">
+        <div className="mx-6 mt-4 px-4 py-3 border border-brand-teal/15 bg-brand-teal/5 text-brand-subtitle/80 text-base rounded-xl">
           {error}
         </div>
       )}
@@ -436,42 +476,81 @@ export default function BuildPage() {
 
       {activeTab === 'pinterest' && (
         <div className="pt-5 px-6">
-          {/* URL input row */}
-          <div className="flex gap-3 mb-5">
-            <input
-              type="url"
-              value={pinterestUrl}
-              onChange={e => setPinterestUrl(e.target.value)}
-              onPaste={e => {
-                e.preventDefault()
-                const pasted = e.clipboardData.getData('text')
-                setPinterestUrl(pasted)
-                if (isValidPinterestUrl(pasted)) {
-                  handlePinterestImport(pasted)
-                }
-              }}
-              onKeyDown={e => e.key === 'Enter' && handlePinterestImport()}
-              placeholder="Paste a Pinterest board URL"
-              className="flex-1 bg-transparent border border-white/15 px-4 py-3 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
-            />
-            <button
-              onClick={() => handlePinterestImport()}
-              disabled={!isValidPinterestUrl(pinterestUrl) || pinterestLoading}
-              className="btn-glass"
-            >
-              {pinterestLoading ? '\u00b7\u00b7\u00b7' : 'Import'}
-            </button>
-          </div>
+          {pinterestImages.length === 0 && (
+            <div className="mb-5">
+              <input
+                type="url"
+                value={pinterestUrl}
+                onChange={e => setPinterestUrl(e.target.value)}
+                onPaste={e => {
+                  e.preventDefault()
+                  const pasted = e.clipboardData.getData('text')
+                  setPinterestUrl(pasted)
+                  if (isValidPinterestUrl(pasted)) {
+                    handlePinterestImport(pasted)
+                  }
+                }}
+                onKeyDown={e => e.key === 'Enter' && handlePinterestImport()}
+                placeholder="Paste a Pinterest board URL"
+                className="w-full bg-transparent border border-white/15 px-4 py-3 text-white/70 text-base placeholder:text-white/40 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
+              />
+              <div className="flex justify-center mt-4">
+                <div className="px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 w-fit">
+                  <p className="text-base text-amber-300/80">
+                    Links must be from public accounts and the board must be public
+                  </p>
+                </div>
+              </div>
+              {!pinterestLoading && (
+                <div className="mt-6 flex justify-center">
+                  <video
+                    src="/tutorials/pinterest-tutorial.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="max-h-[34vh] rounded-xl border border-white/10"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
-          {pinterestError && (
-            <p className="text-brand-subtitle/50 text-xs mb-5">
+          {pinterestError && pinterestImages.length === 0 && (
+            <p className="text-brand-subtitle/80 text-base mb-5">
               {pinterestError}
             </p>
           )}
 
           {pinterestImages.length > 0 && (
-            <div className="-mx-6">
-              {renderImageGrid(pinterestImages, 'vibe-grid', toggleImage)}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase">
+                  {pinterestImages.length} images imported from board
+                </p>
+                <button
+                  onClick={() => {
+                    setPinterestImages([])
+                    setPinterestUrl('')
+                    setPinterestError(null)
+                  }}
+                  className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase hover:text-white/60 transition-colors"
+                >
+                  &times; Clear
+                </button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {pinterestImages.slice(0, 6).map(img => (
+                  <div key={img.id} className="flex-shrink-0 w-20 h-[60px] rounded-xl overflow-hidden border border-brand-teal/20">
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+                {pinterestImages.length > 6 && (
+                  <div className="flex-shrink-0 w-20 h-[60px] rounded-xl border border-white/10 flex items-center justify-center text-white/50 text-base">
+                    +{pinterestImages.length - 6}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -479,9 +558,8 @@ export default function BuildPage() {
 
       {activeTab === 'instagram' && (
         <div className="pt-5 px-6">
-          {/* URL input row — hidden once images are loaded */}
           {instagramImages.length === 0 && (
-            <div className="flex gap-3 mb-5">
+            <div className="mb-5">
               <input
                 type="url"
                 value={instagramUrl}
@@ -496,29 +574,40 @@ export default function BuildPage() {
                 }}
                 onKeyDown={e => e.key === 'Enter' && handleInstagramImport()}
                 placeholder="Paste an Instagram post or reel URL"
-                className="flex-1 bg-transparent border border-white/15 px-4 py-3 text-white/70 text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
+                className="w-full bg-transparent border border-white/15 px-4 py-3 text-white/70 text-base placeholder:text-white/40 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
               />
-              <button
-                onClick={() => handleInstagramImport()}
-                disabled={!isValidInstagramUrl(instagramUrl) || instagramLoading}
-                className="btn-glass"
-              >
-                {instagramLoading ? '\u00b7\u00b7\u00b7' : 'Import'}
-              </button>
+              <div className="flex justify-center mt-4">
+                <div className="px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 w-fit">
+                  <p className="text-base text-amber-300/80">
+                    Links must be from public accounts
+                  </p>
+                </div>
+              </div>
+              {!instagramLoading && (
+                <div className="mt-6 flex justify-center">
+                  <video
+                    src="/tutorials/instagram-tutorial.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="max-h-[34vh] rounded-xl border border-white/10"
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {instagramError && (
-            <p className="text-brand-subtitle/50 text-xs mb-5">
+          {instagramError && instagramImages.length === 0 && (
+            <p className="text-brand-subtitle/80 text-base mb-5">
               {instagramError}
             </p>
           )}
 
-          {/* Single post — non-interactive preview */}
           {instagramType === 'single' && instagramImages.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.35em] uppercase">
+                <p className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase">
                   Post imported
                 </p>
                 <button
@@ -528,7 +617,7 @@ export default function BuildPage() {
                     setInstagramUrl('')
                     setInstagramError(null)
                   }}
-                  className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
+                  className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase hover:text-white/60 transition-colors"
                 >
                   &times; Clear
                 </button>
@@ -543,12 +632,39 @@ export default function BuildPage() {
             </div>
           )}
 
-          {/* Carousel — selection grid */}
+          {instagramType === 'reel' && instagramImages.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase">
+                  Reel imported
+                </p>
+                <button
+                  onClick={() => {
+                    setInstagramImages([])
+                    setInstagramType(null)
+                    setInstagramUrl('')
+                    setInstagramError(null)
+                  }}
+                  className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase hover:text-white/60 transition-colors"
+                >
+                  &times; Clear
+                </button>
+              </div>
+              <div className="w-40 aspect-[4/3] rounded-xl overflow-hidden">
+                <img
+                  src={instagramImages[0].url}
+                  alt=""
+                  className="w-full h-full object-cover animate-fade-in"
+                />
+              </div>
+            </div>
+          )}
+
           {instagramType === 'carousel' && instagramImages.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.35em] uppercase">
-                  {selected.length}/{Math.min(instagramImages.length, MAX_IMAGES - uploadedImages.length)} selected
+                <p className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase">
+                  {instagramImages.length} images imported from carousel
                 </p>
                 <button
                   onClick={() => {
@@ -558,13 +674,99 @@ export default function BuildPage() {
                     setInstagramError(null)
                     setSelected([])
                   }}
-                  className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase hover:text-white/60 transition-colors"
+                  className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase hover:text-white/60 transition-colors"
                 >
                   &times; Clear
                 </button>
               </div>
-              <div className="-mx-6">
-                {renderImageGrid(instagramImages, 'vibe-grid', toggleImage)}
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {instagramImages.slice(0, 6).map(img => (
+                  <div key={img.id} className="flex-shrink-0 w-20 h-[60px] rounded-xl overflow-hidden border border-brand-teal/20">
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+                {instagramImages.length > 6 && (
+                  <div className="flex-shrink-0 w-20 h-[60px] rounded-xl border border-white/10 flex items-center justify-center text-white/50 text-base">
+                    +{instagramImages.length - 6}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'tiktok' && (
+        <div className="pt-5 px-6">
+          {tiktokImages.length === 0 && (
+            <div className="mb-5">
+              <input
+                type="url"
+                value={tiktokUrl}
+                onChange={e => setTiktokUrl(e.target.value)}
+                onPaste={e => {
+                  e.preventDefault()
+                  const pasted = e.clipboardData.getData('text')
+                  setTiktokUrl(pasted)
+                  if (isValidTiktokUrl(pasted)) {
+                    handleTiktokImport(pasted)
+                  }
+                }}
+                onKeyDown={e => e.key === 'Enter' && handleTiktokImport()}
+                placeholder="Paste a TikTok video URL"
+                className="w-full bg-transparent border border-white/15 px-4 py-3 text-white/70 text-base placeholder:text-white/40 focus:outline-none focus:border-brand-teal/50 transition-colors rounded-xl min-h-[44px]"
+              />
+              <div className="flex justify-center mt-4">
+                <div className="px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 w-fit">
+                  <p className="text-base text-amber-300/80">
+                    Links must be from public accounts
+                  </p>
+                </div>
+              </div>
+              {!tiktokLoading && (
+                <div className="mt-6 flex justify-center">
+                  <video
+                    src="/tutorials/tiktok-tutorial.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="max-h-[34vh] rounded-xl border border-white/10"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {tiktokError && tiktokImages.length === 0 && (
+            <p className="text-brand-subtitle/80 text-base mb-5">
+              {tiktokError}
+            </p>
+          )}
+
+          {tiktokImages.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase">
+                  Video cover imported
+                </p>
+                <button
+                  onClick={() => {
+                    setTiktokImages([])
+                    setTiktokUrl('')
+                    setTiktokError(null)
+                  }}
+                  className="text-brand-subtitle/80 text-base tracking-[0.15em] uppercase hover:text-white/60 transition-colors"
+                >
+                  &times; Clear
+                </button>
+              </div>
+              <div className="w-40 aspect-[4/3] rounded-xl overflow-hidden">
+                <img
+                  src={tiktokImages[0].url}
+                  alt=""
+                  className="w-full h-full object-cover animate-fade-in"
+                />
               </div>
             </div>
           )}
@@ -579,21 +781,27 @@ export default function BuildPage() {
         <button
           onClick={handleDiscover}
           disabled={
-            (activeTab === 'instagram' && instagramType === 'single' && instagramImages.length === 0) ||
-            (activeTab === 'instagram' && instagramType === 'carousel' && selected.length === 0) ||
-            (activeTab === 'instagram' && instagramType === null) ||
-            (activeTab !== 'instagram' && totalSelected === 0)
+            (activeTab === 'instagram' && instagramImages.length === 0) ||
+            (activeTab === 'pinterest' && pinterestImages.length === 0) ||
+            (activeTab === 'tiktok' && tiktokImages.length === 0) ||
+            (activeTab === 'curated' && totalSelected === 0)
           }
           className="btn-glass-primary w-full py-4 rounded-xl"
         >
-          {activeTab === 'instagram' && instagramType === null
-            ? 'Import an Instagram post first'
-            : activeTab === 'instagram' && instagramType === 'single'
-            ? instagramImages.length === 0
-              ? 'Import an Instagram post first'
-              : 'Discover My Scent'
-            : activeTab === 'instagram' && instagramType === 'carousel' && selected.length === 0
-            ? 'Select images from the carousel'
+          {activeTab === 'instagram' && instagramImages.length === 0
+            ? 'Import an Instagram post or reel first'
+            : activeTab === 'instagram' && instagramType === 'carousel'
+            ? `Discover My Scent \u2014 ${instagramImages.length} images`
+            : activeTab === 'instagram'
+            ? 'Discover My Scent'
+            : activeTab === 'pinterest' && pinterestImages.length === 0
+            ? 'Import a Pinterest board first'
+            : activeTab === 'pinterest'
+            ? `Discover My Scent \u2014 ${pinterestImages.length} images`
+            : activeTab === 'tiktok' && tiktokImages.length === 0
+            ? 'Import a TikTok video first'
+            : activeTab === 'tiktok'
+            ? 'Discover My Scent'
             : totalSelected === 0
             ? 'Select at least one image'
             : `Discover My Scent \u2014 ${totalSelected} selected`}

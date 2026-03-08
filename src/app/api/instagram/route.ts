@@ -23,9 +23,10 @@ function extractShortcode(raw: string): { shortcode: string; isProfile: boolean;
     if (!isInstagram) return null
     const parts = url.pathname.replace(/\/$/, '').split('/').filter(Boolean)
     if (parts.length === 0) return null
-    if (parts[0] === 'p' || parts[0] === 'reel') {
+    if (parts[0] === 'p' || parts[0] === 'reel' || parts[0] === 'reels') {
       if (parts.length < 2) return null
-      return { shortcode: parts[1], isProfile: false, pathType: parts[0] as 'p' | 'reel' }
+      const isReel = parts[0] === 'reel' || parts[0] === 'reels'
+      return { shortcode: parts[1], isProfile: false, pathType: isReel ? 'reel' : 'p' }
     }
     // Single segment = profile (e.g. /username/)
     if (parts.length === 1) return { shortcode: parts[0], isProfile: true, pathType: 'p' }
@@ -178,7 +179,7 @@ export async function GET(request: NextRequest) {
     // Googlebot UA returns server-rendered HTML with actual scontent image URLs.
     // Browser UAs get a JS-only shell with no images in the initial HTML.
     const res = await fetch(
-      `https://www.instagram.com/${pathType}/${shortcode}/`,
+      `https://www.instagram.com/${pathType === 'reel' ? 'reel' : 'p'}/${shortcode}/`,
       { headers: GOOGLEBOT_HEADERS, signal: AbortSignal.timeout(15000) }
     )
     if (!res.ok) throw new Error(`Instagram returned ${res.status}`)
@@ -194,7 +195,7 @@ export async function GET(request: NextRequest) {
     }
 
     const capped = images.slice(0, MAX_IMAGES).map((url, i) => ({ id: `ig_${i}`, url }))
-    const type = capped.length > 1 ? 'carousel' : 'single'
+    const type = pathType === 'reel' ? 'reel' : capped.length > 1 ? 'carousel' : 'single'
     return NextResponse.json({ images: capped, type })
   } catch {
     return NextResponse.json(

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Archivo } from "next/font/google";
 import { MistProvider } from "@/components/MistEffect";
 import { OrganicBackground } from "@/components/OrganicBackground";
+import { AgentationWrapper } from "@/components/AgentationWrapper";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -40,6 +41,7 @@ export default function RootLayout({
         <MistProvider>
           {children}
         </MistProvider>
+        {process.env.NODE_ENV === "development" && <AgentationWrapper />}
       </body>
     </html>
   );

@@ -98,13 +98,13 @@ export async function POST(request: NextRequest) {
       const loreal = scored.filter(p => p.is_loreal)
       const other = scored.filter(p => !p.is_loreal)
       const topLoreal = loreal.slice(0, LOREAL_TOP_ROW_SLOTS)
-      const remaining = 8 - topLoreal.length
+      const remaining = 5 - topLoreal.length
       topPicks = [...topLoreal, ...other.slice(0, remaining)]
     } else {
-      topPicks = scored.slice(0, 8)
+      topPicks = scored.slice(0, 5)
     }
 
-    // Hydrate the final 8 with full data (notes, url, etc.) in one small query
+    // Hydrate the final 5 with full data (notes, url, etc.) in one small query
     const topIds = topPicks.map(p => p.id)
     const { data: fullPerfumes, error: fullError } = await supabase
       .from('perfumes')

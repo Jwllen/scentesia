@@ -152,21 +152,21 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
           >&times;</button>
           {/* Score badge */}
           <div className="absolute bottom-4 left-4 px-2 py-1 border border-brand-teal/20 rounded-full bg-brand-teal/5 backdrop-blur-sm">
-            <span className="text-brand-subtitle/70 text-[9px] tracking-[0.2em] uppercase">
+            <span className="text-brand-subtitle/80 text-sm tracking-[0.2em] uppercase">
               {perfume.match_score}% match
             </span>
           </div>
         </div>
 
         <div className="px-4 py-5 sm:px-7 sm:py-7">
-          <p className="text-brand-subtitle/50 text-[9px] tracking-[0.25em] uppercase mb-1">
+          <p className="text-brand-subtitle/70 text-sm tracking-[0.25em] uppercase mb-1">
             {formatName(perfume.brand)}
           </p>
           <h2 className="font-expanded text-xl sm:text-2xl md:text-3xl font-light text-white mb-5">
             {formatName(perfume.name)}
           </h2>
 
-          <p className="text-white/60 text-sm leading-relaxed mb-6 italic border-l border-brand-teal/20 pl-4">
+          <p className="text-white/70 text-base leading-relaxed mb-6 italic border-l border-brand-teal/20 pl-4">
             {perfume.match_reason}
           </p>
 
@@ -177,7 +177,7 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
               return (
                 <span
                   key={accord}
-                  className={`text-[9px] px-2.5 py-1 border ${c.border} ${c.text} tracking-wide rounded-full ${c.bg}`}
+                  className={`text-base px-2.5 py-1 border ${c.border} ${c.text} tracking-wide rounded-full ${c.bg}`}
                 >
                   {accord}
                 </span>
@@ -189,27 +189,27 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
           <div className="space-y-4 mb-6">
             {perfume.top_notes?.length > 0 && (
               <div>
-                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase mb-1.5">Top Notes</p>
-                <p className="text-white/70 text-sm">{perfume.top_notes.slice(0, 5).join(' \u00b7 ')}</p>
+                <p className="text-brand-subtitle/80 text-sm tracking-[0.25em] uppercase mb-1.5">Top Notes</p>
+                <p className="text-white/80 text-base">{perfume.top_notes.slice(0, 5).join(' \u00b7 ')}</p>
               </div>
             )}
             {perfume.heart_notes?.length > 0 && (
               <div>
-                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase mb-1.5">Heart Notes</p>
-                <p className="text-white/70 text-sm">{perfume.heart_notes.slice(0, 5).join(' \u00b7 ')}</p>
+                <p className="text-brand-subtitle/80 text-sm tracking-[0.25em] uppercase mb-1.5">Heart Notes</p>
+                <p className="text-white/80 text-base">{perfume.heart_notes.slice(0, 5).join(' \u00b7 ')}</p>
               </div>
             )}
             {perfume.base_notes?.length > 0 && (
               <div>
-                <p className="text-brand-subtitle/60 text-[9px] tracking-[0.25em] uppercase mb-1.5">Base Notes</p>
-                <p className="text-white/70 text-sm">{perfume.base_notes.slice(0, 5).join(' \u00b7 ')}</p>
+                <p className="text-brand-subtitle/80 text-sm tracking-[0.25em] uppercase mb-1.5">Base Notes</p>
+                <p className="text-white/80 text-base">{perfume.base_notes.slice(0, 5).join(' \u00b7 ')}</p>
               </div>
             )}
           </div>
 
           {perfume.rating && (
-            <p className="text-brand-subtitle/60 text-xs mb-6">
-              Rated <span className="text-white/60">{Number(perfume.rating).toFixed(1)}/5</span>
+            <p className="text-brand-subtitle/80 text-base mb-6">
+              Rated <span className="text-white/70">{Number(perfume.rating).toFixed(1)}/5</span>
               {perfume.votes && ` \u00b7 ${Number(perfume.votes).toLocaleString()} reviews`}
             </p>
           )}
@@ -283,7 +283,7 @@ export default function ResultsPage() {
             return (
               <span
                 key={accord}
-                className={`text-[9px] px-2.5 py-1 border ${c.border} ${c.text} tracking-wide rounded-full ${c.bg}`}
+                className={`text-base px-2.5 py-1 border ${c.border} ${c.text} tracking-wide rounded-full ${c.bg}`}
               >
                 {accord}
               </span>
@@ -300,7 +300,7 @@ export default function ResultsPage() {
 
         {recommendations.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-brand-subtitle/50 text-sm mb-5">
+            <p className="text-brand-subtitle/70 text-base mb-5">
               No matches found for this vibe.
             </p>
             <button
@@ -328,24 +328,24 @@ export default function ResultsPage() {
                   {/* Best Match badge */}
                   {isBestMatch && (
                     <div className="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/35 backdrop-blur-sm flex items-center justify-center leading-none">
-                      <span className="text-amber-300 text-[8px] tracking-[0.15em] uppercase font-semibold leading-none">Best Match</span>
+                      <span className="text-amber-300 text-sm tracking-[0.15em] uppercase font-semibold leading-none">Best Match</span>
                     </div>
                   )}
                   {/* Bottle area */}
                   <div className="h-36 bg-transparent relative overflow-hidden border-b border-brand-teal/8">
                     <PerfumeBottleImage perfume={rec} />
                     <div className="absolute top-2 right-2">
-                      <span className="text-brand-subtitle/60 text-[9px]">
+                      <span className="text-brand-subtitle/80 text-sm">
                         {rec.match_score}%
                       </span>
                     </div>
                   </div>
                   {/* Info */}
                   <div className="p-3.5">
-                    <p className="text-brand-subtitle/60 text-[8px] tracking-[0.15em] uppercase mb-0.5 truncate">
+                    <p className="text-brand-subtitle/80 text-sm tracking-[0.15em] uppercase mb-0.5 truncate">
                       {formatName(rec.brand)}
                     </p>
-                    <h3 className="font-expanded text-sm sm:text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
+                    <h3 className="font-expanded text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
                       {formatName(rec.name)}
                     </h3>
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -354,7 +354,7 @@ export default function ResultsPage() {
                         return (
                         <span
                           key={accord}
-                          className={`text-[7px] px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
+                          className={`text-sm px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
                         >
                           {accord}
                         </span>
@@ -375,7 +375,7 @@ export default function ResultsPage() {
           <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-1">
             Layering
           </h2>
-          <p className="text-brand-subtitle/60 text-xs mb-6">
+          <p className="text-brand-subtitle/80 text-base mb-6">
             Combine for a scent that&apos;s uniquely yours.
           </p>
           <div className="space-y-3">
@@ -383,14 +383,14 @@ export default function ResultsPage() {
               <div key={i} className="p-5 glass-card rounded-xl relative">
                 {layer.combo_score > 0 && (
                   <div className="absolute top-4 right-4 px-2 py-1 rounded-full bg-brand-teal/10 border border-brand-teal/20">
-                    <span className="text-brand-subtitle/70 text-[9px] tracking-[0.15em]">
+                    <span className="text-brand-subtitle/80 text-sm tracking-[0.15em]">
                       {layer.combo_score}% match
                     </span>
                   </div>
                 )}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
                   <div>
-                    <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
+                    <p className="text-brand-subtitle/80 text-sm uppercase tracking-wider">
                       {layer.brand_1}
                     </p>
                     <p className="font-expanded text-white/90 text-base sm:text-lg font-light">
@@ -399,7 +399,7 @@ export default function ResultsPage() {
                   </div>
                   <span className="text-white/60 text-xl sm:text-2xl font-light">+</span>
                   <div>
-                    <p className="text-brand-subtitle/60 text-[8px] uppercase tracking-wider">
+                    <p className="text-brand-subtitle/80 text-sm uppercase tracking-wider">
                       {layer.brand_2}
                     </p>
                     <p className="font-expanded text-white/90 text-base sm:text-lg font-light">
@@ -407,10 +407,10 @@ export default function ResultsPage() {
                     </p>
                   </div>
                 </div>
-                <p className="text-brand-subtitle/60 text-xs leading-relaxed mb-1.5">
+                <p className="text-brand-subtitle/80 text-base leading-relaxed mb-1.5">
                   {layer.effect}
                 </p>
-                <p className="text-white/60 text-xs leading-relaxed">
+                <p className="text-white/70 text-base leading-relaxed">
                   {layer.apply}
                 </p>
               </div>

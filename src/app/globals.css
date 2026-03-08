@@ -108,7 +108,7 @@
   align-items: center;
   justify-content: center;
   padding: 0.625rem 1.5rem;
-  font-size: 9px;
+  font-size: 16px;
   letter-spacing: 0.35em;
   text-transform: uppercase;
   font-family: var(--font-dm-sans), sans-serif;
@@ -142,7 +142,7 @@
   align-items: center;
   justify-content: center;
   padding: 0.875rem 2.5rem;
-  font-size: 9px;
+  font-size: 16px;
   letter-spacing: 0.35em;
   text-transform: uppercase;
   font-family: var(--font-dm-sans), sans-serif;

@@ -3,19 +3,24 @@
 import { useRouter } from 'next/navigation'
 import { useMist } from '@/components/MistEffect'
 import { Logo } from '@/components/Logo'
+import { VibePreview } from '@/components/VibePreview'
+import { SocialProof } from '@/components/SocialProof'
 
 export default function LandingPage() {
   const router = useRouter()
   const { spray } = useMist()
 
   return (
-    <main className="grain-layer relative w-screen bg-organic overflow-hidden flex flex-col" style={{ height: '100dvh', position: 'fixed', inset: 0, zIndex: 1 }}>
+    <main
+      className="grain-layer relative w-screen bg-organic overflow-x-hidden"
+      style={{ minHeight: '100dvh', position: 'relative', zIndex: 1 }}
+    >
 
-      {/* Nav spacer */}
-      <div className="relative z-10 pt-8" />
-
-      {/* Hero — vertically centered in remaining space */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
+      {/* Hero — 55dvh */}
+      <div
+        className="relative z-10 flex flex-col items-center justify-center px-6 text-center"
+        style={{ minHeight: '55dvh', paddingTop: '6rem' }}
+      >
 
         <div className="animate-fade-in mb-6" style={{ animationDelay: '0ms' }}>
           <Logo size={80} className="text-white" />
@@ -29,14 +34,14 @@ export default function LandingPage() {
         </h1>
 
         <p
-          className="animate-fade-in text-brand-subtitle/50 text-lg md:text-2xl tracking-[0.4em] uppercase mb-10 md:mb-14"
+          className="animate-fade-in text-brand-subtitle/80 text-lg md:text-2xl tracking-[0.4em] uppercase mb-10 md:mb-14"
           style={{ animationDelay: '260ms' }}
         >
           Fragrance, finally in your language.
         </p>
 
         <p
-          className="animate-fade-up text-brand-subtitle/60 text-lg font-light leading-relaxed max-w-[26rem]"
+          className="animate-fade-up text-brand-subtitle/80 text-lg font-light leading-relaxed max-w-[26rem]"
           style={{ animationDelay: '400ms' }}
         >
           Your aesthetic has a scent. We found it.
@@ -62,9 +67,15 @@ export default function LandingPage() {
 
       </div>
 
+      {/* VibePreview Tutorial */}
+      <VibePreview />
+
+      {/* Social Proof */}
+      <SocialProof />
+
       {/* Bottom footnote */}
       <p
-        className="animate-fade-in relative z-10 text-center text-brand-subtitle/30 text-[9px] tracking-wider pb-8"
+        className="animate-fade-in relative z-10 text-center text-brand-subtitle/70 text-base tracking-wider pb-8"
         style={{ animationDelay: '800ms' }}
       >
         Images analyzed by AI &middot; Not stored or retained
