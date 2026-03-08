@@ -201,6 +201,13 @@
 .animate-fade-in {
   animation: fadeIn 1.4s ease both;
 }
+.animate-slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 .animate-ken-burns {
   animation: kenBurns 8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }

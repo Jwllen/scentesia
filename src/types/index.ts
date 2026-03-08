@@ -26,10 +26,21 @@ export interface VibeAnalysis {
   vibe_summary: string
 }
 
+export interface LayeringPairing {
+  perfume_id: number
+  name: string
+  brand: string
+  url?: string
+  combo_score: number
+  effect: string
+  apply: string
+}
+
 export interface PerfumeRecommendation extends Perfume {
   match_score: number
   matched_accords: string[]
   match_reason: string
+  layering?: LayeringPairing[]
 }
 
 export interface LayeringSuggestion {

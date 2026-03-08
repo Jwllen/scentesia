@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useMist } from '@/components/MistEffect'
 import { TiltCard } from '@/components/TiltCard'
 import { Logo } from '@/components/Logo'
-import type { PerfumeRecommendation, LayeringSuggestion, VibeAnalysis } from '@/types'
+import ShareCard from '@/components/ShareCard'
+import type { PerfumeRecommendation, VibeAnalysis } from '@/types'
 
 function formatName(str: string): string {
   return str.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
@@ -61,6 +62,9 @@ function getPerfumeImageUrl(url?: string): string | null {
   return `https://fimgs.net/mdimg/perfume/375x500.${match[1]}.jpg`
 }
 
+// Module-level cache: persists across re-renders, cleared on page navigation
+const imageCache = new Map<string, string>()
+
 function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
   const [processedSrc, setProcessedSrc] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -70,6 +74,13 @@ function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
   const proxyUrl = rawUrl
     ? `/api/proxy-image?url=${encodeURIComponent(rawUrl)}`
     : null
+
+  // Check cache on mount / when rawUrl changes
+  useEffect(() => {
+    if (rawUrl && imageCache.has(rawUrl)) {
+      setProcessedSrc(imageCache.get(rawUrl)!)
+    }
+  }, [rawUrl])
 
   const onLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget
@@ -85,7 +96,7 @@ function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
 
       for (let i = 0; i < d.length; i += 4) {
         const r = d[i], g = d[i + 1], b = d[i + 2]
-        // Soft edge fade in the near-white range (210–240) for smooth edges
+        // Soft edge fade in the near-white range (210-240) for smooth edges
         const brightness = (r + g + b) / 3
         if (brightness > 240) {
           d[i + 3] = 0
@@ -95,12 +106,16 @@ function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
       }
 
       ctx.putImageData(imageData, 0, 0)
-      setProcessedSrc(canvas.toDataURL('image/png'))
+      const dataUrl = canvas.toDataURL('image/png')
+      if (rawUrl) imageCache.set(rawUrl, dataUrl)
+      setProcessedSrc(dataUrl)
     } catch {
       // Canvas blocked (shouldn't happen via proxy) — show original
-      setProcessedSrc(img.src)
+      const fallback = img.src
+      if (rawUrl) imageCache.set(rawUrl, fallback)
+      setProcessedSrc(fallback)
     }
-  }, [])
+  }, [rawUrl])
 
   if (!proxyUrl || error) {
     return (
@@ -135,20 +150,38 @@ function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
   )
 }
 
-function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendation; onClose: () => void }) {
+function PerfumeDetailModal({
+  perfume, recommendations, onClose, onSelectPerfume,
+}: {
+  perfume: PerfumeRecommendation
+  recommendations: PerfumeRecommendation[]
+  onClose: () => void
+  onSelectPerfume?: (rec: PerfumeRecommendation) => void
+}) {
   const { spray } = useMist()
+  const [showShare, setShowShare] = useState(false)
+
+  const handleClose = () => {
+    setShowShare(false)
+    onClose()
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ position: 'fixed', zIndex: 50 }}>
-      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full md:max-w-md bg-gradient-to-b from-[#0a1a22] to-[#080808] border border-brand-teal/15 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ position: 'fixed', zIndex: 50 }}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={handleClose} />
+      <div className="relative w-full sm:max-w-md bg-gradient-to-b from-[#0a1a22] to-[#080808] border border-brand-teal/15 z-10 max-h-[85dvh] sm:max-h-[80dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl animate-slide-up sm:animate-fade-up">
+
+        {/* Drag handle — mobile only */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-white/15" />
+        </div>
 
         {/* Bottle area */}
         <div className="h-44 bg-transparent relative flex items-center justify-center border-b border-brand-teal/15">
           <PerfumeBottleImage perfume={perfume} />
           <button
-            onClick={onClose}
-            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center text-white/40 hover:text-white/80 text-2xl leading-none transition-colors"
+            onClick={handleClose}
+            className="absolute top-3 right-3 w-10 h-10 min-h-[44px] flex items-center justify-center text-white/40 hover:text-white/80 text-2xl leading-none transition-colors cursor-pointer focus:ring focus:ring-white/30 focus:outline-none rounded-full"
           >&times;</button>
           {/* Score badge */}
           <div className="absolute bottom-4 left-4 px-2 py-1 border border-brand-teal/20 rounded-full bg-brand-teal/5 backdrop-blur-sm">
@@ -214,6 +247,44 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
             </p>
           )}
 
+          {/* Pairs well with — per-card layering */}
+          {perfume.layering && perfume.layering.length > 0 && (
+            <div className="mb-6">
+              <p className="text-brand-subtitle/80 text-sm tracking-[0.25em] uppercase mb-3">Pairs well with</p>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
+                {perfume.layering.map((pair) => {
+                  const pairImgUrl = getPerfumeImageUrl(pair.url)
+                  const proxyUrl = pairImgUrl ? `/api/proxy-image?url=${encodeURIComponent(pairImgUrl)}` : null
+                  return (
+                    <button
+                      key={pair.perfume_id}
+                      onClick={() => {
+                        const fullRec = recommendations.find(r => r.id === pair.perfume_id)
+                        if (fullRec && onSelectPerfume) onSelectPerfume(fullRec)
+                      }}
+                      className="shrink-0 w-28 glass-card rounded-xl overflow-hidden text-left hover:border-white/15 transition-colors duration-200 cursor-pointer snap-start min-h-[44px]"
+                    >
+                      <div className="h-20 bg-transparent relative overflow-hidden border-b border-brand-teal/8">
+                        {proxyUrl ? (
+                          <img src={proxyUrl} alt={`${pair.name} bottle`} className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-brand-subtitle/20 text-2xl">?</div>
+                        )}
+                      </div>
+                      <div className="p-2">
+                        <p className="text-brand-subtitle/70 text-sm tracking-wider uppercase truncate">{formatName(pair.brand)}</p>
+                        <p className="text-white/80 text-sm font-light truncate">{formatName(pair.name)}</p>
+                        <div className="mt-1 px-1.5 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 w-fit">
+                          <span className="text-brand-subtitle/80 text-sm">{pair.combo_score}%</span>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {perfume.url && (
             <a
               href={perfume.url}
@@ -222,13 +293,24 @@ function PerfumeDetailModal({ perfume, onClose }: { perfume: PerfumeRecommendati
               onClick={(e) => {
                 spray(e.currentTarget.getBoundingClientRect())
               }}
-              className="btn-glass-primary block w-full text-center py-3.5 rounded-xl"
+              className="btn-glass-primary block w-full text-center py-3.5 rounded-xl min-h-[44px] cursor-pointer focus:ring focus:ring-white/30 focus:outline-none"
             >
               Find This Perfume &rarr;
             </a>
           )}
+
+          <button
+            onClick={() => setShowShare(true)}
+            className="btn-glass block w-full text-center py-3.5 rounded-xl min-h-[44px] cursor-pointer focus:ring focus:ring-white/30 focus:outline-none mt-3"
+          >
+            Share This Match
+          </button>
         </div>
       </div>
+
+      {showShare && (
+        <ShareCard perfume={perfume} onClose={() => setShowShare(false)} />
+      )}
     </div>
   )
 }
@@ -238,7 +320,6 @@ export default function ResultsPage() {
   const { spray } = useMist()
   const [vibe, setVibe] = useState<VibeAnalysis | null>(null)
   const [recommendations, setRecommendations] = useState<PerfumeRecommendation[]>([])
-  const [layers, setLayers] = useState<LayeringSuggestion[]>([])
   const [selected, setSelected] = useState<PerfumeRecommendation | null>(null)
 
   useEffect(() => {
@@ -248,28 +329,29 @@ export default function ResultsPage() {
       const data = JSON.parse(raw)
       setVibe(data.vibe)
       setRecommendations(data.recommendations || [])
-      setLayers(data.layers || [])
     } catch {
       router.push('/build')
     }
   }, [router])
 
   if (!vibe) return (
-    <main className="min-h-screen bg-organic flex items-center justify-center">
+    <main className="bg-organic flex items-center justify-center" style={{ minHeight: '100dvh' }}>
       <div className="w-5 h-5 border border-brand-teal/30 rounded-full animate-spin border-t-brand-subtitle/60" />
     </main>
   )
 
   return (
-    <main className="min-h-screen bg-organic grain-layer pb-24">
+    <main className="bg-organic grain-layer pb-24" style={{ minHeight: '100dvh' }}>
 
       {/* Vibe header */}
       <div className="px-6 md:px-10 pt-10 pb-8 border-b border-white/8">
         <button
-          onClick={() => router.push('/build')}
-          className="mb-6 hover:opacity-80 transition-opacity"
+          onClick={() => router.push('/')}
+          className="flex items-center gap-2 group min-h-[44px] cursor-pointer"
+          aria-label="Go back to home"
         >
           <Logo size={48} className="text-white" />
+          <span className="text-brand-subtitle/70 text-sm tracking-[0.25em] uppercase group-hover:text-brand-subtitle/90 transition-colors duration-200">Back</span>
         </button>
         <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-3">
           Your Vibe
@@ -311,7 +393,7 @@ export default function ResultsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {recommendations.map((rec, index) => {
               const isBestMatch = index === 0 && rec.match_score > 70
               return (
@@ -331,35 +413,37 @@ export default function ResultsPage() {
                       <span className="text-amber-300 text-sm tracking-[0.15em] uppercase font-semibold leading-none">Best Match</span>
                     </div>
                   )}
-                  {/* Bottle area */}
-                  <div className="h-36 bg-transparent relative overflow-hidden border-b border-brand-teal/8">
-                    <PerfumeBottleImage perfume={rec} />
-                    <div className="absolute top-2 right-2">
-                      <span className="text-brand-subtitle/80 text-sm">
-                        {rec.match_score}%
-                      </span>
-                    </div>
-                  </div>
-                  {/* Info */}
-                  <div className="p-3.5">
-                    <p className="text-brand-subtitle/80 text-sm tracking-[0.15em] uppercase mb-0.5 truncate">
-                      {formatName(rec.brand)}
-                    </p>
-                    <h3 className="font-expanded text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
-                      {formatName(rec.name)}
-                    </h3>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {rec.matched_accords.slice(0, 2).map(accord => {
-                        const c = getAccordColor(accord)
-                        return (
-                        <span
-                          key={accord}
-                          className={`text-sm px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
-                        >
-                          {accord}
+                  <div className="flex sm:block">
+                    {/* Bottle area */}
+                    <div className="w-28 sm:w-full h-28 sm:h-36 bg-transparent relative overflow-hidden border-r sm:border-r-0 sm:border-b border-brand-teal/8 shrink-0">
+                      <PerfumeBottleImage perfume={rec} />
+                      <div className="absolute top-2 right-2">
+                        <span className="text-brand-subtitle/80 text-sm">
+                          {rec.match_score}%
                         </span>
-                        )
-                      })}
+                      </div>
+                    </div>
+                    {/* Info */}
+                    <div className="p-3.5 flex-1 min-w-0 flex flex-col justify-center sm:block">
+                      <p className="text-brand-subtitle/80 text-sm tracking-[0.15em] uppercase mb-0.5 truncate">
+                        {formatName(rec.brand)}
+                      </p>
+                      <h3 className="font-expanded text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
+                        {formatName(rec.name)}
+                      </h3>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {rec.matched_accords.slice(0, 3).map(accord => {
+                          const c = getAccordColor(accord)
+                          return (
+                          <span
+                            key={accord}
+                            className={`text-sm px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
+                          >
+                            {accord}
+                          </span>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 </TiltCard>
@@ -369,70 +453,29 @@ export default function ResultsPage() {
         )}
       </div>
 
-      {/* Layering */}
-      {layers.length > 0 && (
-        <div className="px-6 md:px-10 pt-12">
-          <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-1">
-            Layering
-          </h2>
-          <p className="text-brand-subtitle/80 text-base mb-6">
-            Combine for a scent that&apos;s uniquely yours.
-          </p>
-          <div className="space-y-3">
-            {layers.map((layer, i) => (
-              <div key={i} className="p-5 glass-card rounded-xl relative">
-                {layer.combo_score > 0 && (
-                  <div className="absolute top-4 right-4 px-2 py-1 rounded-full bg-brand-teal/10 border border-brand-teal/20">
-                    <span className="text-brand-subtitle/80 text-sm tracking-[0.15em]">
-                      {layer.combo_score}% match
-                    </span>
-                  </div>
-                )}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-                  <div>
-                    <p className="text-brand-subtitle/80 text-sm uppercase tracking-wider">
-                      {layer.brand_1}
-                    </p>
-                    <p className="font-expanded text-white/90 text-base sm:text-lg font-light">
-                      {layer.perfume_1}
-                    </p>
-                  </div>
-                  <span className="text-white/60 text-xl sm:text-2xl font-light">+</span>
-                  <div>
-                    <p className="text-brand-subtitle/80 text-sm uppercase tracking-wider">
-                      {layer.brand_2}
-                    </p>
-                    <p className="font-expanded text-white/90 text-base sm:text-lg font-light">
-                      {layer.perfume_2}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-brand-subtitle/80 text-base leading-relaxed mb-1.5">
-                  {layer.effect}
-                </p>
-                <p className="text-white/70 text-base leading-relaxed">
-                  {layer.apply}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Try again */}
+      {/* Start Over */}
       <div className="px-6 pt-12 text-center">
         <button
           onClick={(e) => {
             spray(e.currentTarget.getBoundingClientRect())
-            setTimeout(() => router.push('/build'), 300)
+            sessionStorage.removeItem('scentesia_results')
+            sessionStorage.removeItem('scentesia_vibe_images')
+            setTimeout(() => router.push('/'), 300)
           }}
-          className="btn-glass px-8 py-3 rounded-full"
+          className="btn-glass px-8 py-3 rounded-full cursor-pointer min-h-[44px]"
         >
-          Try a Different Vibe
+          Start Over
         </button>
       </div>
 
-      {selected && <PerfumeDetailModal perfume={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PerfumeDetailModal
+          perfume={selected}
+          recommendations={recommendations}
+          onClose={() => setSelected(null)}
+          onSelectPerfume={(rec) => { setSelected(null); setTimeout(() => setSelected(rec), 150) }}
+        />
+      )}
     </main>
   )
 }
