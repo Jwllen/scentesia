@@ -55,69 +55,18 @@ function getAccordColor(accord: string) {
   return DEFAULT_ACCORD
 }
 
-function getPerfumeImageUrl(url?: string): string | null {
+/** Extract Fragrantica perfume ID from page URL */
+function getPerfumeId(url?: string): string | null {
   if (!url) return null
   const match = url.match(/(\d+)\.html$/)
-  if (!match) return null
-  return `https://fimgs.net/mdimg/perfume/375x500.${match[1]}.jpg`
+  return match ? match[1] : null
 }
 
-// Module-level cache: persists across re-renders, cleared on page navigation
-const imageCache = new Map<string, string>()
-
 function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
-  const [processedSrc, setProcessedSrc] = useState<string | null>(null)
   const [error, setError] = useState(false)
+  const id = getPerfumeId(perfume.url)
 
-  const rawUrl = getPerfumeImageUrl(perfume.url)
-  // Route through our proxy so canvas can read cross-origin pixels
-  const proxyUrl = rawUrl
-    ? `/api/proxy-image?url=${encodeURIComponent(rawUrl)}`
-    : null
-
-  // Check cache on mount / when rawUrl changes
-  useEffect(() => {
-    if (rawUrl && imageCache.has(rawUrl)) {
-      setProcessedSrc(imageCache.get(rawUrl)!)
-    }
-  }, [rawUrl])
-
-  const onLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget
-    try {
-      const canvas = document.createElement('canvas')
-      canvas.width  = img.naturalWidth
-      canvas.height = img.naturalHeight
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0)
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const d = imageData.data
-
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i], g = d[i + 1], b = d[i + 2]
-        // Soft edge fade in the near-white range (210-240) for smooth edges
-        const brightness = (r + g + b) / 3
-        if (brightness > 240) {
-          d[i + 3] = 0
-        } else if (brightness > 210) {
-          d[i + 3] = Math.round(255 * (1 - (brightness - 210) / 30))
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0)
-      const dataUrl = canvas.toDataURL('image/png')
-      if (rawUrl) imageCache.set(rawUrl, dataUrl)
-      setProcessedSrc(dataUrl)
-    } catch {
-      // Canvas blocked (shouldn't happen via proxy) — show original
-      const fallback = img.src
-      if (rawUrl) imageCache.set(rawUrl, fallback)
-      setProcessedSrc(fallback)
-    }
-  }, [rawUrl])
-
-  if (!proxyUrl || error) {
+  if (!id || error) {
     return (
       <div className="w-full h-full flex items-end justify-center pb-4">
         <div className="w-7 h-14 bg-brand-teal/10 border border-brand-teal/20 rounded-sm" />
@@ -126,27 +75,26 @@ function PerfumeBottleImage({ perfume }: { perfume: PerfumeRecommendation }) {
   }
 
   return (
-    <>
-      {/* Hidden loader — triggers canvas processing on load */}
-      {!processedSrc && (
-        <img
-          src={proxyUrl}
-          crossOrigin="anonymous"
-          className="hidden"
-          onLoad={onLoad}
-          onError={() => setError(true)}
-          alt=""
-        />
-      )}
-      {/* Processed transparent bottle */}
-      {processedSrc && (
-        <img
-          src={processedSrc}
-          alt={perfume.name}
-          className="w-full h-full object-contain p-3"
-        />
-      )}
-    </>
+    <picture className="w-full h-full flex items-center justify-center p-3">
+      <source
+        type="image/avif"
+        srcSet={`https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${id}.avif 1x, https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${id}.2x.avif 2x`}
+      />
+      <source
+        type="image/webp"
+        srcSet={`https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${id}.webp 1x, https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${id}.2x.webp 2x`}
+      />
+      <img
+        src={`https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${id}.webp`}
+        alt={perfume.name}
+        width={375}
+        height={500}
+        className="w-full h-full object-contain"
+        loading="eager"
+        decoding="async"
+        onError={() => setError(true)}
+      />
+    </picture>
   )
 }
 
@@ -253,8 +201,7 @@ function PerfumeDetailModal({
               <p className="text-brand-subtitle/80 text-sm tracking-[0.25em] uppercase mb-3">Pairs well with</p>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
                 {perfume.layering.map((pair) => {
-                  const pairImgUrl = getPerfumeImageUrl(pair.url)
-                  const proxyUrl = pairImgUrl ? `/api/proxy-image?url=${encodeURIComponent(pairImgUrl)}` : null
+                  const pairId = getPerfumeId(pair.url)
                   return (
                     <button
                       key={pair.perfume_id}
@@ -265,8 +212,11 @@ function PerfumeDetailModal({
                       className="shrink-0 w-28 glass-card rounded-xl overflow-hidden text-left hover:border-white/15 transition-colors duration-200 cursor-pointer snap-start min-h-[44px]"
                     >
                       <div className="h-20 bg-transparent relative overflow-hidden border-b border-brand-teal/8">
-                        {proxyUrl ? (
-                          <img src={proxyUrl} alt={`${pair.name} bottle`} className="w-full h-full object-contain" />
+                        {pairId ? (
+                          <picture>
+                            <source type="image/webp" srcSet={`https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${pairId}.webp`} />
+                            <img src={`https://fimgs.net/mdimg/perfume-thumbs/dark-375x500.${pairId}.webp`} alt={`${pair.name} bottle`} className="w-full h-full object-contain" />
+                          </picture>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-brand-subtitle/20 text-2xl">?</div>
                         )}
@@ -365,11 +315,11 @@ function PerfumeCarousel({
     const el = containerRef.current
     if (!el) return
     const handleWheel = (e: WheelEvent) => {
-      // Use horizontal scroll, or vertical if no horizontal
+      // Always block page scroll when pointer is over the carousel
+      e.preventDefault()
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
       if (Math.abs(delta) < 10) return
-      e.preventDefault()
-      // Debounce to avoid rapid-fire
+      // Debounce card changes to avoid rapid-fire
       if (wheelTimeout.current) return
       wheelTimeout.current = setTimeout(() => { wheelTimeout.current = null }, 300)
       if (delta > 0 && activeIndex < count - 1) onIndexChange(activeIndex + 1)

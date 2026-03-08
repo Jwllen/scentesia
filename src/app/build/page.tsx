@@ -218,6 +218,7 @@ export default function BuildPage() {
       const { recommendations, layers } = await recommendRes.json()
 
       sessionStorage.setItem('scentesia_results', JSON.stringify({ vibe, recommendations, layers }))
+      sessionStorage.setItem('scentesia_vibe_images', JSON.stringify(allImages))
       router.push('/results')
     } catch (err) {
       console.error(err)
