@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMist } from '@/components/MistEffect'
 import { TiltCard } from '@/components/TiltCard'
@@ -315,12 +315,255 @@ function PerfumeDetailModal({
   )
 }
 
+function PerfumeCarousel({
+  recommendations,
+  onSelect,
+  activeIndex,
+  onIndexChange,
+}: {
+  recommendations: PerfumeRecommendation[]
+  onSelect: (rec: PerfumeRecommendation) => void
+  activeIndex: number
+  onIndexChange: (i: number) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const pointerStartX = useRef(0)
+  const pointerDelta = useRef(0)
+  const didDrag = useRef(false)
+  const wheelTimeout = useRef<ReturnType<typeof setTimeout>>(null)
+
+  const count = recommendations.length
+  const DRAG_THRESHOLD = 10
+
+  // Pointer handlers — only treat as drag if moved beyond threshold
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    pointerStartX.current = e.clientX
+    pointerDelta.current = 0
+    didDrag.current = false
+  }, [])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    pointerDelta.current = e.clientX - pointerStartX.current
+    if (Math.abs(pointerDelta.current) > DRAG_THRESHOLD) {
+      didDrag.current = true
+    }
+  }, [])
+
+  const handlePointerUp = useCallback(() => {
+    if (!didDrag.current) return // was a click, not a drag
+    const swipeThreshold = 40
+    if (pointerDelta.current < -swipeThreshold && activeIndex < count - 1) {
+      onIndexChange(activeIndex + 1)
+    } else if (pointerDelta.current > swipeThreshold && activeIndex > 0) {
+      onIndexChange(activeIndex - 1)
+    }
+    pointerDelta.current = 0
+  }, [activeIndex, count, onIndexChange])
+
+  // Mouse wheel / trackpad scroll
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handleWheel = (e: WheelEvent) => {
+      // Use horizontal scroll, or vertical if no horizontal
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+      if (Math.abs(delta) < 10) return
+      e.preventDefault()
+      // Debounce to avoid rapid-fire
+      if (wheelTimeout.current) return
+      wheelTimeout.current = setTimeout(() => { wheelTimeout.current = null }, 300)
+      if (delta > 0 && activeIndex < count - 1) onIndexChange(activeIndex + 1)
+      else if (delta < 0 && activeIndex > 0) onIndexChange(activeIndex - 1)
+    }
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [activeIndex, count, onIndexChange])
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && activeIndex > 0) onIndexChange(activeIndex - 1)
+      if (e.key === 'ArrowRight' && activeIndex < count - 1) onIndexChange(activeIndex + 1)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [activeIndex, count, onIndexChange])
+
+  return (
+    <div className="relative select-none">
+      {/* Carousel viewport */}
+      <div
+        ref={containerRef}
+        className="relative overflow-visible cursor-grab active:cursor-grabbing"
+        style={{ height: 'clamp(380px, 55vh, 520px)' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {recommendations.map((rec, index) => {
+          const offset = index - activeIndex
+          const absOffset = Math.abs(offset)
+          const isBestMatch = index === 2 && rec.match_score > 70
+          const isCenter = absOffset === 0
+
+          // Podium: center large + lifted, sides smaller + dropped
+          const scale = isCenter ? 1 : absOffset === 1 ? 0.75 : 0.58
+          const zIndex = 10 - absOffset
+
+          // Horizontal spread
+          const translateX = offset === 0 ? 0 : offset > 0
+            ? 42 + (absOffset - 1) * 22
+            : -(42 + (absOffset - 1) * 22)
+
+          // Podium height: center raised, sides descend
+          const translateY = isCenter ? -16 : absOffset === 1 ? 12 : 32
+
+          // Liquid glass: blur + opacity for background cards
+          const blur = isCenter ? 0 : absOffset === 1 ? 2 : 5
+          const cardOpacity = isCenter ? 1 : absOffset === 1 ? 0.75 : 0.5
+
+          // Drop shadow: prominent on center, subtle on sides
+          const shadow = isCenter
+            ? '0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(30,69,91,0.15)'
+            : absOffset === 1
+            ? '0 10px 30px rgba(0,0,0,0.3)'
+            : '0 5px 15px rgba(0,0,0,0.2)'
+
+          const visible = absOffset <= 2
+
+          return (
+            <div
+              key={rec.id}
+              className="absolute left-1/2 top-1/2"
+              style={{
+                width: 'clamp(240px, 58vw, 320px)',
+                transform: `translate(-50%, -50%) translateX(${translateX}%) translateY(${translateY}px) scale(${scale})`,
+                opacity: visible ? cardOpacity : 0,
+                zIndex,
+                filter: blur > 0 ? `blur(${blur}px)` : 'none',
+                transition: 'all 0.6s cubic-bezier(0.32, 0.72, 0, 1)',
+                pointerEvents: visible ? 'auto' : 'none',
+                willChange: 'transform, opacity, filter',
+              }}
+              onClick={() => {
+                if (didDrag.current) return // was a drag, not a click
+                if (isCenter) onSelect(rec)
+                else onIndexChange(index)
+              }}
+            >
+              <TiltCard
+                glowColor={isBestMatch ? 'rgba(251,191,36,0.7)' : undefined}
+                className={`glass-card rounded-2xl overflow-hidden cursor-pointer ${
+                  isBestMatch ? 'border-amber-400/50 gold-pulse' : ''
+                }`}
+                style={{ boxShadow: shadow, background: 'rgba(0,0,0,0.40)' }}
+              >
+                {/* Best Match badge */}
+                {isBestMatch && (
+                  <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/35 backdrop-blur-sm">
+                    <span className="text-amber-300 text-sm tracking-[0.15em] uppercase font-semibold leading-none">Best Match</span>
+                  </div>
+                )}
+
+                {/* Match score */}
+                <div className="absolute top-3 right-3 z-10 px-2 py-1 rounded-full bg-brand-teal/10 border border-brand-teal/20 backdrop-blur-sm">
+                  <span className="text-brand-subtitle/80 text-sm">{rec.match_score}%</span>
+                </div>
+
+                {/* Bottle area */}
+                <div className="h-52 sm:h-60 bg-transparent relative flex items-center justify-center">
+                  <PerfumeBottleImage perfume={rec} />
+                </div>
+
+                {/* Info */}
+                <div className="px-4 pb-4 pt-2 border-t border-brand-teal/8">
+                  <p className="text-brand-subtitle/80 text-sm tracking-[0.15em] uppercase mb-0.5 truncate">
+                    {formatName(rec.brand)}
+                  </p>
+                  <h3 className="font-expanded text-base font-light text-white/90 leading-tight truncate mb-2">
+                    {formatName(rec.name)}
+                  </h3>
+                  <div className="flex flex-wrap gap-1">
+                    {rec.matched_accords.slice(0, 3).map(accord => {
+                      const c = getAccordColor(accord)
+                      return (
+                        <span
+                          key={accord}
+                          className={`text-sm px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
+                        >
+                          {accord}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              </TiltCard>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Navigation arrows — desktop */}
+      {activeIndex > 0 && (
+        <button
+          onClick={() => onIndexChange(activeIndex - 1)}
+          className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer backdrop-blur-sm"
+          aria-label="Previous perfume"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 4l-6 6 6 6" />
+          </svg>
+        </button>
+      )}
+      {activeIndex < count - 1 && (
+        <button
+          onClick={() => onIndexChange(activeIndex + 1)}
+          className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer backdrop-blur-sm"
+          aria-label="Next perfume"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 4l6 6-6 6" />
+          </svg>
+        </button>
+      )}
+
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-2 mt-6">
+        {recommendations.map((rec, i) => {
+          const isGold = i === 2 && rec.match_score > 70
+          const activeColor = isGold ? 'bg-amber-400/70' : 'bg-brand-teal/60'
+          const inactiveColor = isGold ? 'bg-amber-400/25 hover:bg-amber-400/40' : 'bg-white/20 hover:bg-white/40'
+          return (
+            <button
+              key={i}
+              onClick={() => onIndexChange(i)}
+              className={`rounded-full transition-all duration-300 cursor-pointer ${
+                i === activeIndex
+                  ? `w-6 h-2 ${activeColor}`
+                  : `w-2 h-2 ${inactiveColor}`
+              }`}
+              aria-label={`Go to perfume ${i + 1}`}
+            />
+          )
+        })}
+      </div>
+
+      {/* Tap hint */}
+      <p className="text-center text-brand-subtitle/50 text-sm mt-3">
+        Tap to explore
+      </p>
+    </div>
+  )
+}
+
 export default function ResultsPage() {
   const router = useRouter()
   const { spray } = useMist()
   const [vibe, setVibe] = useState<VibeAnalysis | null>(null)
   const [recommendations, setRecommendations] = useState<PerfumeRecommendation[]>([])
   const [selected, setSelected] = useState<PerfumeRecommendation | null>(null)
+  const [carouselIndex, setCarouselIndex] = useState(2)
 
   useEffect(() => {
     const raw = sessionStorage.getItem('scentesia_results')
@@ -328,7 +571,18 @@ export default function ResultsPage() {
     try {
       const data = JSON.parse(raw)
       setVibe(data.vibe)
-      setRecommendations(data.recommendations || [])
+      // Reorder into podium: [#4, #2, #1, #3, #5] — best match at center (index 2)
+      const recs: PerfumeRecommendation[] = data.recommendations || []
+      if (recs.length === 5) {
+        setRecommendations([recs[3], recs[1], recs[0], recs[2], recs[4]])
+      } else {
+        // For other counts, place best in the middle
+        const mid = Math.floor(recs.length / 2)
+        const reordered = [...recs]
+        reordered.splice(0, 1) // remove best
+        reordered.splice(mid, 0, recs[0]) // insert at center
+        setRecommendations(reordered)
+      }
     } catch {
       router.push('/build')
     }
@@ -374,14 +628,14 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Recommendations */}
-      <div className="px-6 md:px-10 pt-8">
-        <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-6">
+      {/* Recommendations — Apple-style carousel */}
+      <div className="pt-8 pb-4">
+        <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-8 px-6 md:px-10">
           Your Scents
         </h2>
 
         {recommendations.length === 0 ? (
-          <div className="text-center py-16">
+          <div className="text-center py-16 px-6">
             <p className="text-brand-subtitle/70 text-base mb-5">
               No matches found for this vibe.
             </p>
@@ -393,63 +647,12 @@ export default function ResultsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            {recommendations.map((rec, index) => {
-              const isBestMatch = index === 0 && rec.match_score > 70
-              return (
-                <TiltCard
-                  key={rec.id}
-                  onClick={() => setSelected(rec)}
-                  glowColor={isBestMatch ? 'rgba(251,191,36,0.7)' : undefined}
-                  className={`text-left glass-card rounded-2xl group ${
-                    isBestMatch
-                      ? 'border-amber-400/50 gold-pulse'
-                      : ''
-                  }`}
-                >
-                  {/* Best Match badge */}
-                  {isBestMatch && (
-                    <div className="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/35 backdrop-blur-sm flex items-center justify-center leading-none">
-                      <span className="text-amber-300 text-sm tracking-[0.15em] uppercase font-semibold leading-none">Best Match</span>
-                    </div>
-                  )}
-                  <div className="flex sm:block">
-                    {/* Bottle area */}
-                    <div className="w-28 sm:w-full h-28 sm:h-36 bg-transparent relative overflow-hidden border-r sm:border-r-0 sm:border-b border-brand-teal/8 shrink-0">
-                      <PerfumeBottleImage perfume={rec} />
-                      <div className="absolute top-2 right-2">
-                        <span className="text-brand-subtitle/80 text-sm">
-                          {rec.match_score}%
-                        </span>
-                      </div>
-                    </div>
-                    {/* Info */}
-                    <div className="p-3.5 flex-1 min-w-0 flex flex-col justify-center sm:block">
-                      <p className="text-brand-subtitle/80 text-sm tracking-[0.15em] uppercase mb-0.5 truncate">
-                        {formatName(rec.brand)}
-                      </p>
-                      <h3 className="font-expanded text-base font-light text-white/90 group-hover:text-white transition-colors leading-tight truncate">
-                        {formatName(rec.name)}
-                      </h3>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {rec.matched_accords.slice(0, 3).map(accord => {
-                          const c = getAccordColor(accord)
-                          return (
-                          <span
-                            key={accord}
-                            className={`text-sm px-1.5 py-0.5 border ${c.border} ${c.text} rounded-full ${c.bg}`}
-                          >
-                            {accord}
-                          </span>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </TiltCard>
-              )
-            })}
-          </div>
+          <PerfumeCarousel
+            recommendations={recommendations}
+            onSelect={setSelected}
+            activeIndex={carouselIndex}
+            onIndexChange={setCarouselIndex}
+          />
         )}
       </div>
 

@@ -5,12 +5,13 @@ import { useRef, useCallback, useEffect, useState, type ReactNode } from 'react'
 interface TiltCardProps {
   children: ReactNode
   className?: string
+  style?: React.CSSProperties
   onClick?: () => void
   maxTilt?: number
   glowColor?: string
 }
 
-export function TiltCard({ children, className = '', onClick, maxTilt = 10, glowColor = 'rgba(30,69,91,0.45)' }: TiltCardProps) {
+export function TiltCard({ children, className = '', style, onClick, maxTilt = 10, glowColor = 'rgba(30,69,91,0.45)' }: TiltCardProps) {
   const cardRef   = useRef<HTMLDivElement>(null)
   const shineRef  = useRef<HTMLDivElement>(null)
   const borderRef = useRef<HTMLDivElement>(null)
@@ -105,7 +106,7 @@ export function TiltCard({ children, className = '', onClick, maxTilt = 10, glow
     <div
       ref={cardRef}
       className={`relative overflow-hidden cursor-pointer backdrop-blur-md ${className}`}
-      style={{ willChange: 'transform' }}
+      style={{ willChange: 'transform', ...style }}
       onMouseMove={handleMouseMove}
       onMouseLeave={resetTilt}
       onTouchMove={handleTouchMove}
