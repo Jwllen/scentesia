@@ -92,13 +92,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No vibe data provided' }, { status: 400 })
     }
 
+    // Normalize accords to lowercase (DB stores lowercase, AI may return capitalized)
+    const normalizedAccords = vibe.accords.map(a => a.toLowerCase().trim())
+
     const supabase = createSupabaseServiceClient()
 
     // Fetch columns needed for hybrid scoring (accords + notes)
     const { data: perfumes, error } = await supabase
       .from('perfumes')
       .select('id, name, brand, rating, votes, accords, is_loreal, top_notes, heart_notes, base_notes')
-      .overlaps('accords', vibe.accords)
+      .overlaps('accords', normalizedAccords)
       .not('accords', 'eq', '{}')
       .gte('votes', 10)
 
@@ -113,7 +116,7 @@ export async function POST(request: NextRequest) {
 
       // Accord-based score (35% of hybrid)
       let accordScore = 0
-      vibe.accords.forEach((vibeAccord, i) => {
+      normalizedAccords.forEach((vibeAccord, i) => {
         if (perfumeAccords.includes(vibeAccord)) {
           accordScore += ACCORD_WEIGHTS[Math.min(i, ACCORD_WEIGHTS.length - 1)]
         }
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
       let score = hybridScore + popularityBoost
       if (LOREAL_BIAS && perfume.is_loreal) score *= 1.2
 
-      const matched = perfumeAccords.filter((a: string) => vibe.accords.includes(a))
+      const matched = perfumeAccords.filter((a: string) => normalizedAccords.includes(a))
 
       return {
         id: perfume.id,
