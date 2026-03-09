@@ -128,6 +128,12 @@ function PerfumeDetailModal({
         <div className="h-44 bg-transparent relative flex items-center justify-center border-b border-brand-teal/15">
           <PerfumeBottleImage perfume={perfume} />
           <button
+            onClick={() => setShowShare(true)}
+            className="absolute top-3 left-3 z-10 px-3 py-1.5 min-h-[44px] flex items-center justify-center text-white/50 hover:text-white/80 text-[16px] tracking-wider uppercase transition-colors cursor-pointer focus:ring focus:ring-white/30 focus:outline-none rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
+          >
+            Share
+          </button>
+          <button
             onClick={handleClose}
             className="absolute top-3 right-3 w-10 h-10 min-h-[44px] flex items-center justify-center text-white/40 hover:text-white/80 text-2xl leading-none transition-colors cursor-pointer focus:ring focus:ring-white/30 focus:outline-none rounded-full"
           >&times;</button>
@@ -249,12 +255,6 @@ function PerfumeDetailModal({
             </a>
           )}
 
-          <button
-            onClick={() => setShowShare(true)}
-            className="btn-glass block w-full text-center py-3.5 rounded-xl min-h-[44px] cursor-pointer focus:ring focus:ring-white/30 focus:outline-none mt-3"
-          >
-            Share This Match
-          </button>
         </div>
       </div>
 

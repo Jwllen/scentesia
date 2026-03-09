@@ -4,7 +4,7 @@ import type { VibeAnalysis, PerfumeRecommendation, LayeringSuggestion } from '@/
 
 const LOREAL_BIAS = process.env.LOREAL_BIAS_ENABLED === 'true'
 const LOREAL_TOP_ROW = process.env.LOREAL_TOP_ROW_ENABLED === 'true'
-const LOREAL_TOP_ROW_SLOTS = parseInt(process.env.LOREAL_TOP_ROW_SLOTS || '4', 10)
+const LOREAL_TOP_ROW_SLOTS = parseInt(process.env.LOREAL_TOP_ROW_SLOTS || '2', 10)
 
 /**
  * Positional weights for matched accords.
@@ -128,6 +128,9 @@ export async function POST(request: NextRequest) {
     // Generate layering suggestions inline (eliminates separate /api/layer call)
     const layers = generateLayers(recommendations, vibe)
 
+    // Attach per-card layering pairings (for "Pairs well with" on each card)
+    attachPerCardLayering(recommendations, vibe)
+
     return NextResponse.json({ recommendations, layers })
   } catch (error) {
     console.error('[recommend] error:', error)
@@ -140,6 +143,70 @@ function generateMatchReason(name: string, brand: string, matched: string[], vib
   const themeWord = vibe.themes?.[0] || 'refined'
   const accordList = matched.slice(0, 2).join(' and ')
   return `Its ${accordList} character mirrors the ${moodWord}, ${themeWord} energy of your board.`
+}
+
+// ── Per-card layering ("Pairs well with") ────────────────────────────
+
+function attachPerCardLayering(recommendations: PerfumeRecommendation[], vibe: VibeAnalysis) {
+  const vibeKeywords = [...(vibe?.mood || []), ...(vibe?.themes || [])]
+
+  for (let i = 0; i < recommendations.length; i++) {
+    const rec = recommendations[i]
+    const pairings: Array<{ idx: number; complementarity: number }> = []
+
+    for (let j = 0; j < recommendations.length; j++) {
+      if (i === j) continue
+      const other = recommendations[j]
+      const recAccords = rec.accords || []
+      const otherAccords = other.accords || []
+      const shared = recAccords.filter(a => otherAccords.includes(a))
+      const allUnique = new Set([...recAccords, ...otherAccords]).size
+      // Good pairing = some overlap (harmony) but not too much (complementarity)
+      const complementarity = allUnique > 0 ? (allUnique - shared.length) / allUnique : 0
+      if (complementarity > 0.15) {
+        pairings.push({ idx: j, complementarity })
+      }
+    }
+
+    // Sort by complementarity (best pairings first), take top 3
+    pairings.sort((a, b) => b.complementarity - a.complementarity)
+    const topPairings = pairings.slice(0, 3)
+
+    rec.layering = topPairings.map((p, pIdx) => {
+      const other = recommendations[p.idx]
+      const aAccords = rec.accords?.slice(0, 2).join(' & ') || 'warm'
+      const bAccords = other.accords?.slice(0, 2).join(' & ') || 'fresh'
+      const aName = formatName(rec.name)
+      const bName = formatName(other.name)
+      const vibeWord = vibeKeywords.length > 0
+        ? vibeKeywords[pIdx % vibeKeywords.length]
+        : 'desired'
+
+      const avgScore = ((rec.match_score || 0) + (other.match_score || 0)) / 2
+      const combo_score = Math.min(Math.round(avgScore + p.complementarity * 12), 100)
+
+      const effectTemplate = EFFECT_TEMPLATES[pIdx % EFFECT_TEMPLATES.length]
+      const applyTemplate = APPLY_TEMPLATES[pIdx % APPLY_TEMPLATES.length]
+
+      const fill = (tpl: string) =>
+        tpl
+          .replace(/\{a\}/g, aName)
+          .replace(/\{b\}/g, bName)
+          .replace(/\{aA\}/g, aAccords)
+          .replace(/\{bA\}/g, bAccords)
+          .replace(/\{v\}/g, vibeWord)
+
+      return {
+        perfume_id: other.id,
+        name: other.name,
+        brand: other.brand,
+        url: other.url,
+        combo_score,
+        effect: fill(effectTemplate),
+        apply: fill(applyTemplate),
+      }
+    })
+  }
 }
 
 // ── Layering logic (moved from /api/layer) ──────────────────────────
