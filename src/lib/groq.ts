@@ -90,7 +90,7 @@ Return ONLY valid JSON with this exact schema:
   "mood": ["3-4 emotional tones"],
   "themes": ["3-4 visual themes"],
   "textures": ["3-4 tactile qualities"],
-  "accords": ["4-6 perfume accords from this list ONLY: woody, floral, citrus, oriental, fresh, gourmand, aquatic, spicy, earthy, musk, amber, leather, smoky, green, powdery, fruity, white floral, rose, vanilla, sandalwood, oud"],
+  "accords": ["4-6 perfume accords from this list ONLY: woody, floral, citrus, sweet, aromatic, fruity, powdery, white floral, warm spicy, fresh spicy, amber, vanilla, musky, green, fresh, rose, patchouli, leather, earthy, aquatic, lavender, iris, oud, soft spicy, smoky"],
   "top_notes": ["3-5 specific top perfume notes capturing the mood board's opening impression"],
   "heart_notes": ["3-5 specific heart notes defining the core character"],
   "base_notes": ["3-5 specific base notes anchoring the scent"],
