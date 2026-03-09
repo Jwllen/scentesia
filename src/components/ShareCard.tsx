@@ -72,7 +72,7 @@ interface MosaicCell { x: number; y: number; w: number; h: number }
 function computeStaggeredMosaic(
   areaX: number, areaY: number, areaW: number, areaH: number,
 ): MosaicCell[] {
-  const gap = 8
+  const gap = 12
   const cols = 3
   const colW = (areaW - gap * (cols - 1)) / cols
 
@@ -82,8 +82,8 @@ function computeStaggeredMosaic(
     [0.30, 0.38, 0.32],
     [0.34, 0.32, 0.34],
   ]
-  // Stagger offsets
-  const colOffsets = [0, -20, 10]
+  // Stagger offsets (masonry-style, like build page curated tab)
+  const colOffsets = [0, -50, 25]
 
   const cells: MosaicCell[] = []
   for (let col = 0; col < cols; col++) {
@@ -218,37 +218,58 @@ async function drawCard(
     const logoImg = await loadImage('/scentesia-logo-black.svg')
     const logoH = 72
     const logoW = logoH * (454 / 465)
-    // Measure text to vertically center logo + wordmark together
-    ctx.font = '400 76px "Archivo", sans-serif'
-    const txtMetrics = ctx.measureText('Scentesia')
-    const txtH = 76 * 0.72 // approximate cap height
-    const groupH = Math.max(logoH, txtH)
-    const logoY = row1Y + (row1H - groupH) / 2
-    const txtBaseline = logoY + logoH / 2 + txtH / 2 - 4
+    // Center logo and wordmark vertically in row1
+    const centerY = row1Y + row1H / 2
+    const logoY = centerY - logoH / 2
     ctx.drawImage(logoImg, lx, logoY, logoW, logoH)
 
+    // Wordmark — black, vertically centered with logo
     ctx.textAlign = 'left'
     ctx.font = '400 76px "Archivo", sans-serif'
-    ctx.fillStyle = LABEL_TEXT
-    ctx.fillText('Scentesia', lx + logoW + 16, txtBaseline)
+    ctx.fillStyle = '#000000'
+    ctx.letterSpacing = '14px'
+    const capH = 76 * 0.72
+    ctx.fillText('SCENTESIA', lx + logoW + 16, centerY + capH / 2)
+    ctx.letterSpacing = '0px'
   } catch { /* skip */ }
 
-  // Score (right side, vertically centered with logo)
+  // Score (right side, vertically centered with logo+wordmark)
   const scoreNum = Math.min(perfume.match_score, 100)
-  const scoreStr = `${scoreNum}%`
+  const scoreCenterY = row1Y + row1H / 2
+  const scoreCapH = 76 * 0.72
+  const scoreBaseline = scoreCenterY + scoreCapH / 2
+
+  // Draw number
   ctx.textAlign = 'right'
   ctx.font = '800 76px "Archivo", sans-serif'
-  ctx.fillStyle = LABEL_TEXT
-  ctx.fillText(scoreStr, rx, row1Y + 68)
+  ctx.fillStyle = '#000000'
+  const numStr = `${scoreNum}`
+  const pctFont = '700 38px "Archivo", sans-serif'
+  // Measure % width to reserve space
+  ctx.font = pctFont
+  const pctW = ctx.measureText('%').width
+  // Draw number right-aligned leaving room for %
+  ctx.font = '800 76px "Archivo", sans-serif'
+  ctx.fillText(numStr, rx - pctW, scoreBaseline)
+  const numW = ctx.measureText(numStr).width
 
-  const scoreW = ctx.measureText(scoreStr).width
+  // Draw % as superscript (smaller, raised)
+  ctx.font = pctFont
+  ctx.fillStyle = '#000000'
+  ctx.textAlign = 'left'
+  ctx.fillText('%', rx - pctW, scoreCenterY - scoreCapH * 0.05)
+
+  // Gold bar under full score
+  const totalScoreW = numW + pctW
   ctx.fillStyle = ACCENT_GOLD
-  ctx.fillRect(rx - scoreW - 4, row1Y + 76, scoreW + 8, 3)
+  ctx.fillRect(rx - totalScoreW - 4, scoreBaseline + 6, totalScoreW + 8, 3)
 
+  // "MATCH" label
+  ctx.textAlign = 'right'
   ctx.font = '600 14px "Archivo", sans-serif'
   ctx.fillStyle = LABEL_DIM
   ctx.letterSpacing = '4px'
-  ctx.fillText('MATCH', rx, row1Y + 94)
+  ctx.fillText('MATCH', rx, scoreBaseline + 24)
   ctx.letterSpacing = '0px'
 
   cy += row1H
@@ -379,8 +400,8 @@ async function drawCard(
         const cell = cells[i]
 
         ctx.save()
-        ctx.beginPath()
-        ctx.rect(cell.x, cell.y, cell.w, cell.h)
+        const cellR = 16
+        roundRect(ctx, cell.x, cell.y, cell.w, cell.h, cellR)
         ctx.clip()
 
         const scale = Math.max(cell.w / img.width, cell.h / img.height)
@@ -395,14 +416,15 @@ async function drawCard(
 
       if (loadedCount > 0) {
         hasMosaic = true
-        // Heavy vignette at bottom for bottle
-        const vig = ctx.createLinearGradient(0, cardY + cardH * 0.40, 0, cardY + cardH)
+        // Strong vignette — starts earlier for deeper fade over bottle area
+        const vig = ctx.createLinearGradient(0, cardY + cardH * 0.25, 0, cardY + cardH)
         vig.addColorStop(0, 'rgba(8,12,18,0)')
-        vig.addColorStop(0.4, 'rgba(8,12,18,0.5)')
-        vig.addColorStop(0.7, 'rgba(8,12,18,0.85)')
+        vig.addColorStop(0.25, 'rgba(8,12,18,0.45)')
+        vig.addColorStop(0.5, 'rgba(8,12,18,0.80)')
+        vig.addColorStop(0.7, 'rgba(8,12,18,0.95)')
         vig.addColorStop(1, 'rgba(8,12,18,1)')
         ctx.fillStyle = vig
-        ctx.fillRect(cardX, cardY + cardH * 0.40, cardW, cardH * 0.60)
+        ctx.fillRect(cardX, cardY + cardH * 0.25, cardW, cardH * 0.75)
       }
 
       ctx.restore()
@@ -459,7 +481,7 @@ async function drawCard(
   ctx.textAlign = 'center'
   ctx.font = 'italic 20px "Archivo", sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.55)'
-  ctx.fillText('Fragrance, finally in your language.', W / 2, footerY)
+  ctx.fillText('Fragrance, finally in your language. — Scentesia.com', W / 2, footerY)
 }
 
 /* ── component ───────────────────────────────────────────── */
