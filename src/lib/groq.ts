@@ -1,10 +1,38 @@
 import type { VibeAnalysis } from '@/types'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
-const MAX_IMAGES = 5
+const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+const MAX_IMAGES_FOR_DEEP = 6
 
-/* ── Prompt ────────────────────────────────────────────────────────── */
+/* ── Per-image deep analysis type ──────────────────────────────────── */
+
+interface ImageAnalysis {
+  inventory: {
+    lighting_and_time: string
+    objects_and_environment: string[]
+  }
+  character_profiling: {
+    demographics_and_gender: string
+    body_language: string
+    wardrobe_semiotics: string
+  }
+  color_and_texture: {
+    dominant_colors: string[]
+    psychological_mood: string
+    implied_textures: string[]
+  }
+  collective_narrative: {
+    vibe_description: string
+    core_aesthetic: string
+  }
+  olfactory_translation: {
+    top_notes: string[]
+    heart_notes: string[]
+    base_notes: string[]
+  }
+}
+
+/* ── Prompts ───────────────────────────────────────────────────────── */
 
 const SYSTEM_PROMPT = `You are a world-class Semiotician, Fashion Critic, and Master Perfumer working for L'Oréal Luxe. Your expertise lies in decoding visual media, understanding deep cultural aesthetics, analyzing human psychology through imagery, and translating those visual/emotional cues into precise olfactory profiles (perfume notes).
 
@@ -12,10 +40,48 @@ You do not provide surface-level descriptions; you uncover the hidden narrative,
 
 CRITICAL INSTRUCTION: You must respond ONLY in valid JSON format. Do not include any conversational text, introductions, or markdown formatting (like \`\`\`json). Use the exact JSON schema provided.`
 
-function buildAnalysisPrompt(imageCount: number): string {
-  return `You are analyzing ${imageCount} image${imageCount > 1 ? 's' : ''} from a mood board. Decode the visual narrative, cultural aesthetic, and emotional weight across ALL images, then translate them into a precise fragrance profile.
+const PER_IMAGE_PROMPT = `Analyze this image deeply and map it to a fragrance profile. Use this exact JSON schema:
 
-For each image, consider: lighting, color psychology, objects, environment, character/body language, wardrobe semiotics, implied textures, and cultural subtext. Then synthesize everything into ONE cohesive olfactory identity.
+{
+  "inventory": {
+    "lighting_and_time": "Describe the lighting, time of day, and image quality/texture.",
+    "objects_and_environment": ["List 3-5 key objects or architectural elements"]
+  },
+  "character_profiling": {
+    "demographics_and_gender": "How does the subject present? Discuss traditional/subverted gender roles. If no person, describe the implied viewer/inhabitant.",
+    "body_language": "What does posture and expression communicate? If no person, describe the energy of the scene.",
+    "wardrobe_semiotics": "Describe clothing/textures and what they signal about status or subculture. If no person, describe the visual 'outfit' of the scene."
+  },
+  "color_and_texture": {
+    "dominant_colors": ["Color 1", "Color 2"],
+    "psychological_mood": "What mood do these colors dictate?",
+    "implied_textures": ["Texture 1", "Texture 2"]
+  },
+  "collective_narrative": {
+    "vibe_description": "What is the overarching cinematic story being told?",
+    "core_aesthetic": "Name the specific subculture or aesthetic (e.g., Dark Academia, Old Money, Clean Girl, Mob Wife, Quiet Luxury, Coastal Grandmother, Cyberpunk, Cottagecore)"
+  },
+  "olfactory_translation": {
+    "top_notes": ["2-3 specific perfume ingredient notes"],
+    "heart_notes": ["2-3 specific perfume ingredient notes"],
+    "base_notes": ["2-3 specific perfume ingredient notes"]
+  }
+}
+
+Return ONLY this JSON object filled with your deep analysis.`
+
+function buildMergePrompt(analyses: ImageAnalysis[]): string {
+  const analysesText = analyses
+    .map((a, i) => `Image ${i + 1}:\n${JSON.stringify(a, null, 2)}`)
+    .join('\n\n')
+
+  return `You are synthesizing ${analyses.length} individual image analyses from a mood board into ONE cohesive fragrance profile.
+
+Here are the individual deep analyses:
+
+${analysesText}
+
+Synthesize all observations into a single unified profile. Identify the DOMINANT narrative, aesthetic, and olfactory direction across ALL images. Resolve contradictions by favoring the majority theme. The notes must be specific perfume ingredients (e.g., "bergamot", "iris", "sandalwood"), not categories.
 
 CRITICAL ACCORD SELECTION RULES:
 - Choose accords that PRECISELY capture the mood board's CHARACTER, not generic safe picks.
@@ -91,56 +157,80 @@ async function callGroq(
       ],
       response_format: { type: 'json_object' },
       temperature: 0.7,
-      max_tokens: 4096,
+      max_tokens: 2048,
     }),
   })
 
   if (!response.ok) {
     const err = await response.text()
-    console.error(`[groq] API error ${response.status}: ${err}`)
     throw new Error(`Groq API error ${response.status}: ${err}`)
   }
 
   const data = await response.json()
-  const content = data.choices?.[0]?.message?.content?.trim() || ''
-  if (!content) {
-    console.error('[groq] Empty response from model:', JSON.stringify(data))
-  }
-  return content
+  return data.choices?.[0]?.message?.content?.trim() || ''
+}
+
+/* ── Pass 1: Per-image deep analysis ───────────────────────────────── */
+
+async function analyzeOneImage(imageDataUrl: string): Promise<ImageAnalysis> {
+  const text = await callGroq(SYSTEM_PROMPT, [
+    { type: 'text', text: PER_IMAGE_PROMPT },
+    { type: 'image_url', image_url: { url: imageDataUrl } },
+  ])
+  const cleaned = text.replace(/```json\n?|\n?```/g, '').trim()
+  return JSON.parse(cleaned) as ImageAnalysis
+}
+
+/* ── Pass 2: Merge into unified VibeAnalysis ───────────────────────── */
+
+async function mergeAnalyses(analyses: ImageAnalysis[]): Promise<VibeAnalysis> {
+  const mergePrompt = buildMergePrompt(analyses)
+  const text = await callGroq(SYSTEM_PROMPT, [
+    { type: 'text', text: mergePrompt },
+  ])
+  const cleaned = text.replace(/```json\n?|\n?```/g, '').trim()
+  return JSON.parse(cleaned) as VibeAnalysis
 }
 
 /* ── Public API ────────────────────────────────────────────────────── */
 
 export async function analyzeImages(imageInputs: string[]): Promise<VibeAnalysis> {
-  const sampled = sampleEvenly(imageInputs, MAX_IMAGES)
+  // Sample images if too many for per-image analysis
+  const sampled = sampleEvenly(imageInputs, MAX_IMAGES_FOR_DEEP)
 
   // Convert all to base64 data URLs in parallel
   const dataUrls = await Promise.all(sampled.map(toDataUrl))
 
-  console.log(`[groq] Analyzing ${dataUrls.length} images in single pass with ${MODEL}`)
+  // Pass 1: Deep per-image analysis (parallel)
+  const perImageResults = await Promise.allSettled(
+    dataUrls.map(url => analyzeOneImage(url))
+  )
 
-  // Single-pass: send all images + prompt in one call
-  const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
-    { type: 'text', text: buildAnalysisPrompt(dataUrls.length) },
-    ...dataUrls.map(url => ({ type: 'image_url' as const, image_url: { url } })),
-  ]
+  const successful = perImageResults
+    .filter((r): r is PromiseFulfilledResult<ImageAnalysis> => r.status === 'fulfilled')
+    .map(r => r.value)
 
-  const text = await callGroq(SYSTEM_PROMPT, userContent)
-  const cleaned = text.replace(/```json\n?|\n?```/g, '').trim()
-  const parsed = JSON.parse(cleaned) as VibeAnalysis
+  console.log(`[groq] Per-image analysis: ${successful.length}/${dataUrls.length} succeeded`)
+
+  if (successful.length === 0) {
+    throw new Error('All per-image analyses failed')
+  }
+
+  // Pass 2: Merge into unified mood board profile
+  const merged = await mergeAnalyses(successful)
 
   // Ensure arrays have fallback defaults
   return {
-    palette: parsed.palette || [],
-    mood: parsed.mood || [],
-    themes: parsed.themes || [],
-    textures: parsed.textures || [],
-    accords: parsed.accords || [],
-    top_notes: parsed.top_notes || [],
-    heart_notes: parsed.heart_notes || [],
-    base_notes: parsed.base_notes || [],
-    intensity: parsed.intensity || 'moderate',
-    vibe_summary: parsed.vibe_summary || '',
-    core_aesthetic: parsed.core_aesthetic || '',
+    palette: merged.palette || [],
+    mood: merged.mood || [],
+    themes: merged.themes || [],
+    textures: merged.textures || [],
+    accords: merged.accords || [],
+    top_notes: merged.top_notes || [],
+    heart_notes: merged.heart_notes || [],
+    base_notes: merged.base_notes || [],
+    intensity: merged.intensity || 'moderate',
+    vibe_summary: merged.vibe_summary || '',
+    core_aesthetic: merged.core_aesthetic || '',
   }
 }
