@@ -13,42 +13,72 @@ function formatName(str: string): string {
 }
 
 const ACCORD_COLORS: Record<string, { border: string; bg: string; text: string }> = {
-  // Citrus / fresh
-  citrus:    { border: 'border-yellow-400/30', bg: 'bg-yellow-400/8',  text: 'text-yellow-300/80' },
-  fresh:     { border: 'border-cyan-400/30',   bg: 'bg-cyan-400/8',    text: 'text-cyan-300/80' },
-  aromatic:  { border: 'border-emerald-400/30', bg: 'bg-emerald-400/8', text: 'text-emerald-300/80' },
-  green:     { border: 'border-green-400/30',  bg: 'bg-green-400/8',   text: 'text-green-300/80' },
-  aquatic:   { border: 'border-sky-400/30',    bg: 'bg-sky-400/8',     text: 'text-sky-300/80' },
-  marine:    { border: 'border-sky-400/30',    bg: 'bg-sky-400/8',     text: 'text-sky-300/80' },
+  // Citrus / fresh / green
+  citrus:       { border: 'border-yellow-400/30',  bg: 'bg-yellow-400/8',   text: 'text-yellow-300/80' },
+  fresh:        { border: 'border-cyan-400/30',    bg: 'bg-cyan-400/8',     text: 'text-cyan-300/80' },
+  aromatic:     { border: 'border-emerald-400/30', bg: 'bg-emerald-400/8',  text: 'text-emerald-300/80' },
+  green:        { border: 'border-green-400/30',   bg: 'bg-green-400/8',    text: 'text-green-300/80' },
+  herbal:       { border: 'border-green-500/30',   bg: 'bg-green-500/8',    text: 'text-green-400/80' },
+  ozonic:       { border: 'border-cyan-300/30',    bg: 'bg-cyan-300/8',     text: 'text-cyan-200/80' },
+  lavender:     { border: 'border-indigo-300/30',  bg: 'bg-indigo-300/8',   text: 'text-indigo-200/80' },
+  // Aquatic / marine
+  aquatic:      { border: 'border-sky-400/30',     bg: 'bg-sky-400/8',      text: 'text-sky-300/80' },
+  marine:       { border: 'border-sky-500/30',     bg: 'bg-sky-500/8',      text: 'text-sky-400/80' },
+  salty:        { border: 'border-sky-300/30',     bg: 'bg-sky-300/8',      text: 'text-sky-200/80' },
   // Floral
-  floral:    { border: 'border-pink-400/30',   bg: 'bg-pink-400/8',    text: 'text-pink-300/80' },
-  rose:      { border: 'border-rose-400/30',   bg: 'bg-rose-400/8',    text: 'text-rose-300/80' },
-  powdery:   { border: 'border-fuchsia-300/30', bg: 'bg-fuchsia-300/8', text: 'text-fuchsia-200/80' },
+  floral:       { border: 'border-pink-400/30',    bg: 'bg-pink-400/8',     text: 'text-pink-300/80' },
+  'white floral': { border: 'border-pink-200/30',  bg: 'bg-pink-200/8',     text: 'text-pink-100/80' },
+  'yellow floral': { border: 'border-yellow-300/30', bg: 'bg-yellow-300/8', text: 'text-yellow-200/80' },
+  rose:         { border: 'border-rose-400/30',    bg: 'bg-rose-400/8',     text: 'text-rose-300/80' },
+  violet:       { border: 'border-violet-400/30',  bg: 'bg-violet-400/8',   text: 'text-violet-300/80' },
+  iris:         { border: 'border-indigo-400/30',  bg: 'bg-indigo-400/8',   text: 'text-indigo-300/80' },
+  tuberose:     { border: 'border-pink-300/30',    bg: 'bg-pink-300/8',     text: 'text-pink-200/80' },
+  powdery:      { border: 'border-fuchsia-300/30', bg: 'bg-fuchsia-300/8',  text: 'text-fuchsia-200/80' },
+  aldehydic:    { border: 'border-fuchsia-200/30', bg: 'bg-fuchsia-200/8',  text: 'text-fuchsia-100/80' },
   // Warm / spicy
-  warm:      { border: 'border-orange-400/30', bg: 'bg-orange-400/8',  text: 'text-orange-300/80' },
-  spicy:     { border: 'border-red-400/30',    bg: 'bg-red-400/8',     text: 'text-red-300/80' },
-  oriental:  { border: 'border-amber-400/30',  bg: 'bg-amber-400/8',   text: 'text-amber-300/80' },
-  amber:     { border: 'border-amber-400/30',  bg: 'bg-amber-400/8',   text: 'text-amber-300/80' },
-  // Woody / earthy
-  woody:     { border: 'border-yellow-700/30', bg: 'bg-yellow-700/8',  text: 'text-yellow-600/80' },
-  earthy:    { border: 'border-stone-400/30',  bg: 'bg-stone-400/8',   text: 'text-stone-300/80' },
-  musky:     { border: 'border-stone-400/30',  bg: 'bg-stone-400/8',   text: 'text-stone-300/80' },
-  leather:   { border: 'border-amber-700/30',  bg: 'bg-amber-700/8',   text: 'text-amber-600/80' },
-  smoky:     { border: 'border-zinc-400/30',   bg: 'bg-zinc-400/8',    text: 'text-zinc-300/80' },
-  oud:       { border: 'border-amber-700/30',  bg: 'bg-amber-700/8',   text: 'text-amber-600/80' },
+  'warm spicy': { border: 'border-orange-400/30',  bg: 'bg-orange-400/8',   text: 'text-orange-300/80' },
+  'fresh spicy': { border: 'border-red-300/30',    bg: 'bg-red-300/8',      text: 'text-red-200/80' },
+  'soft spicy': { border: 'border-orange-300/30',  bg: 'bg-orange-300/8',   text: 'text-orange-200/80' },
+  cinnamon:     { border: 'border-orange-500/30',  bg: 'bg-orange-500/8',   text: 'text-orange-400/80' },
+  amber:        { border: 'border-amber-400/30',   bg: 'bg-amber-400/8',    text: 'text-amber-300/80' },
+  balsamic:     { border: 'border-amber-500/30',   bg: 'bg-amber-500/8',    text: 'text-amber-400/80' },
+  // Woody / earthy / mossy
+  woody:        { border: 'border-yellow-700/30',  bg: 'bg-yellow-700/8',   text: 'text-yellow-600/80' },
+  patchouli:    { border: 'border-yellow-800/30',  bg: 'bg-yellow-800/8',   text: 'text-yellow-700/80' },
+  earthy:       { border: 'border-stone-400/30',   bg: 'bg-stone-400/8',    text: 'text-stone-300/80' },
+  mossy:        { border: 'border-emerald-600/30', bg: 'bg-emerald-600/8',  text: 'text-emerald-500/80' },
+  musky:        { border: 'border-stone-400/30',   bg: 'bg-stone-400/8',    text: 'text-stone-300/80' },
+  leather:      { border: 'border-amber-700/30',   bg: 'bg-amber-700/8',    text: 'text-amber-600/80' },
+  animalic:     { border: 'border-amber-800/30',   bg: 'bg-amber-800/8',    text: 'text-amber-700/80' },
+  smoky:        { border: 'border-zinc-400/30',    bg: 'bg-zinc-400/8',     text: 'text-zinc-300/80' },
+  tobacco:      { border: 'border-yellow-600/30',  bg: 'bg-yellow-600/8',   text: 'text-yellow-500/80' },
+  oud:          { border: 'border-amber-700/30',   bg: 'bg-amber-700/8',    text: 'text-amber-600/80' },
   // Sweet / gourmand
-  sweet:     { border: 'border-pink-300/30',   bg: 'bg-pink-300/8',    text: 'text-pink-200/80' },
-  vanilla:   { border: 'border-amber-200/30',  bg: 'bg-amber-200/8',   text: 'text-amber-100/80' },
-  gourmand:  { border: 'border-orange-300/30', bg: 'bg-orange-300/8',  text: 'text-orange-200/80' },
+  sweet:        { border: 'border-pink-300/30',    bg: 'bg-pink-300/8',     text: 'text-pink-200/80' },
+  vanilla:      { border: 'border-amber-200/30',   bg: 'bg-amber-200/8',    text: 'text-amber-100/80' },
+  caramel:      { border: 'border-orange-300/30',  bg: 'bg-orange-300/8',   text: 'text-orange-200/80' },
+  honey:        { border: 'border-yellow-500/30',  bg: 'bg-yellow-500/8',   text: 'text-yellow-400/80' },
+  chocolate:    { border: 'border-amber-600/30',   bg: 'bg-amber-600/8',    text: 'text-amber-500/80' },
+  cacao:        { border: 'border-amber-600/30',   bg: 'bg-amber-600/8',    text: 'text-amber-500/80' },
+  coffee:       { border: 'border-yellow-700/30',  bg: 'bg-yellow-700/8',   text: 'text-yellow-600/80' },
+  almond:       { border: 'border-amber-300/30',   bg: 'bg-amber-300/8',    text: 'text-amber-200/80' },
+  lactonic:     { border: 'border-rose-200/30',    bg: 'bg-rose-200/8',     text: 'text-rose-100/80' },
   // Fruity
-  fruity:    { border: 'border-red-300/30',    bg: 'bg-red-300/8',     text: 'text-red-200/80' },
-  tropical:  { border: 'border-lime-400/30',   bg: 'bg-lime-400/8',    text: 'text-lime-300/80' },
+  fruity:       { border: 'border-red-300/30',     bg: 'bg-red-300/8',      text: 'text-red-200/80' },
+  tropical:     { border: 'border-lime-400/30',    bg: 'bg-lime-400/8',     text: 'text-lime-300/80' },
+  cherry:       { border: 'border-red-400/30',     bg: 'bg-red-400/8',      text: 'text-red-300/80' },
+  coconut:      { border: 'border-lime-200/30',    bg: 'bg-lime-200/8',     text: 'text-lime-100/80' },
+  nutty:        { border: 'border-amber-400/30',   bg: 'bg-amber-400/8',    text: 'text-amber-300/80' },
+  anis:         { border: 'border-emerald-300/30', bg: 'bg-emerald-300/8',  text: 'text-emerald-200/80' },
 }
 
 const DEFAULT_ACCORD = { border: 'border-brand-teal/25', bg: 'bg-brand-teal/5', text: 'text-brand-subtitle/70' }
 
 function getAccordColor(accord: string) {
   const key = accord.toLowerCase().trim()
+  // Exact match first
+  if (ACCORD_COLORS[key]) return ACCORD_COLORS[key]
+  // Partial match fallback
   for (const [k, v] of Object.entries(ACCORD_COLORS)) {
     if (key.includes(k)) return v
   }
