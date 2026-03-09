@@ -83,6 +83,17 @@ ${analysesText}
 
 Synthesize all observations into a single unified profile. Identify the DOMINANT narrative, aesthetic, and olfactory direction across ALL images. Resolve contradictions by favoring the majority theme. The notes must be specific perfume ingredients (e.g., "bergamot", "iris", "sandalwood"), not categories.
 
+CRITICAL ACCORD SELECTION RULES:
+- Choose accords that PRECISELY capture the mood board's CHARACTER, not generic safe picks.
+- AVOID defaulting to the most common/generic accords (woody, citrus, aromatic, floral, fresh) unless the board genuinely calls for them. These are the perfumery equivalent of "nice" — they say nothing specific.
+- Prioritize DISTINCTIVE accords that differentiate this vibe from others. A cyberpunk board should smell industrial (smoky, leather, ozonic), not like a department store bestseller. A cottagecore board needs herbal, honey, green — not just "floral."
+- Think about what makes this mood board UNIQUE. What would someone smell and immediately think "that's exactly this vibe"?
+- Use AT LEAST 2 accords from the less common options (leather, smoky, ozonic, animalic, tobacco, balsamic, mossy, marine, herbal, cinnamon, honey, coffee, cacao, lactonic, salty, etc.) when the aesthetic warrants edge, warmth, darkness, or specificity.
+- Order accords by importance: the first accord should be the DEFINING scent character, not just the most common category.
+
+ACCORD LIST (choose 5-6 from ONLY these):
+woody, floral, citrus, sweet, aromatic, fruity, powdery, white floral, warm spicy, fresh spicy, amber, vanilla, musky, green, fresh, rose, patchouli, leather, earthy, aquatic, lavender, iris, oud, soft spicy, yellow floral, tropical, ozonic, violet, balsamic, animalic, tuberose, marine, herbal, caramel, mossy, smoky, cinnamon, almond, coconut, lactonic, tobacco, honey, aldehydic, nutty, cherry, coffee, cacao, salty, anis, chocolate
+
 Return ONLY valid JSON with this exact schema:
 
 {
@@ -90,7 +101,7 @@ Return ONLY valid JSON with this exact schema:
   "mood": ["3-4 emotional tones"],
   "themes": ["3-4 visual themes"],
   "textures": ["3-4 tactile qualities"],
-  "accords": ["4-6 perfume accords from this list ONLY: woody, floral, citrus, sweet, aromatic, fruity, powdery, white floral, warm spicy, fresh spicy, amber, vanilla, musky, green, fresh, rose, patchouli, leather, earthy, aquatic, lavender, iris, oud, soft spicy, yellow floral, tropical, ozonic, violet, balsamic, animalic, tuberose, marine, herbal, caramel, mossy, smoky, cinnamon, almond, coconut, lactonic, tobacco, honey, aldehydic, nutty, cherry, coffee, cacao, salty, anis, chocolate"],
+  "accords": ["5-6 perfume accords — specific and distinctive, ordered by importance"],
   "top_notes": ["3-5 specific top perfume notes capturing the mood board's opening impression"],
   "heart_notes": ["3-5 specific heart notes defining the core character"],
   "base_notes": ["3-5 specific base notes anchoring the scent"],
