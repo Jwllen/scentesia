@@ -221,8 +221,9 @@ export default function BuildPage() {
       sessionStorage.setItem('scentesia_vibe_images', JSON.stringify(allImages))
       router.push('/results')
     } catch (err) {
-      console.error(err)
-      setError('Something went wrong. Please try again.')
+      const errMsg = err instanceof Error ? err.message : String(err)
+      console.error('[discover]', errMsg)
+      setError(errMsg)
       setLoading(false)
     } finally {
       clearInterval(interval)

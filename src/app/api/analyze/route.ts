@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
     const vibe = await analyzeImages(images)
     return NextResponse.json({ vibe })
   } catch (error) {
-    console.error('[analyze] error:', error)
-    return NextResponse.json({ error: 'Failed to analyze images' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('[analyze] error:', msg)
+    return NextResponse.json({ error: `Analysis failed: ${msg}` }, { status: 500 })
   }
 }
