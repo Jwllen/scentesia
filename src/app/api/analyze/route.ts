@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeImages } from '@/lib/groq'
 
+export const maxDuration = 60
+
 export async function POST(request: NextRequest) {
   try {
     const { images } = await request.json()

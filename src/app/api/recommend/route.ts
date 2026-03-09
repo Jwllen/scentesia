@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import type { VibeAnalysis, PerfumeRecommendation, LayeringSuggestion } from '@/types'
 
+export const maxDuration = 30
+
 const LOREAL_BIAS = process.env.LOREAL_BIAS_ENABLED === 'true'
 const LOREAL_TOP_ROW = process.env.LOREAL_TOP_ROW_ENABLED === 'true'
 const LOREAL_TOP_ROW_SLOTS = parseInt(process.env.LOREAL_TOP_ROW_SLOTS || '2', 10)
