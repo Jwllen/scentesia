@@ -2,7 +2,7 @@ import type { VibeAnalysis } from '@/types'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
-const MAX_IMAGES_FOR_DEEP = 4
+const MAX_IMAGES_FOR_DEEP = 3
 
 /* ── Per-image deep analysis type ──────────────────────────────────── */
 
@@ -206,14 +206,16 @@ export async function analyzeImages(imageInputs: string[]): Promise<VibeAnalysis
   // Convert all to base64 data URLs in parallel
   const dataUrls = await Promise.all(sampled.map(toDataUrl))
 
-  // Pass 1: Deep per-image analysis (parallel)
-  const perImageResults = await Promise.allSettled(
-    dataUrls.map(url => analyzeOneImage(url))
-  )
-
-  const successful = perImageResults
-    .filter((r): r is PromiseFulfilledResult<ImageAnalysis> => r.status === 'fulfilled')
-    .map(r => r.value)
+  // Pass 1: Per-image deep analysis (sequential to avoid Groq rate limits)
+  const successful: ImageAnalysis[] = []
+  for (let i = 0; i < dataUrls.length; i++) {
+    try {
+      const result = await analyzeOneImage(dataUrls[i])
+      successful.push(result)
+    } catch (err) {
+      console.error(`[groq] Image ${i + 1}/${dataUrls.length} failed:`, err instanceof Error ? err.message : err)
+    }
+  }
 
   console.log(`[groq] Per-image analysis: ${successful.length}/${dataUrls.length} succeeded`)
 
