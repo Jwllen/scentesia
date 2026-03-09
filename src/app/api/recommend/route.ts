@@ -9,10 +9,16 @@ const LOREAL_TOP_ROW_SLOTS = parseInt(process.env.LOREAL_TOP_ROW_SLOTS || '2', 1
 /**
  * Positional weights for matched accords.
  * The vibe analyser returns accords ordered by relevance (most important first).
- * Matching the top accord is worth much more than matching a peripheral one.
  * Weights sum to 1.0 across 5 slots; extra matches beyond 5 use the last weight.
  */
 const ACCORD_WEIGHTS = [0.30, 0.22, 0.18, 0.16, 0.14]
+
+/** Note category weights (heart = core character, base = longevity) */
+const NOTE_CATEGORY_WEIGHTS = { top: 0.25, heart: 0.40, base: 0.35 }
+
+/** Hybrid scoring split: 65% notes, 35% accords */
+const NOTE_WEIGHT = 0.65
+const ACCORD_WEIGHT = 0.35
 
 /** Minimum votes threshold for the popularity-confidence signal. */
 const MIN_VOTES_FOR_CONFIDENCE = 50
@@ -34,6 +40,48 @@ const APPLY_TEMPLATES = [
   `Apply {a} generously to warm skin, pause, then add a light pass of {b}. The heat will blend them naturally.`,
 ]
 
+/** Fuzzy note matching — handles partial names like "bergamot" vs "Italian bergamot" */
+function fuzzyNoteMatch(vibeNote: string, perfumeNote: string): boolean {
+  const a = vibeNote.toLowerCase().trim()
+  const b = perfumeNote.toLowerCase().trim()
+  return a === b || b.includes(a) || a.includes(b)
+}
+
+/** Score how well a perfume's notes match the vibe's suggested notes */
+function computeNoteScore(
+  vibe: VibeAnalysis,
+  perfume: { top_notes?: string[]; heart_notes?: string[]; base_notes?: string[] },
+): number {
+  const categories = [
+    { vibeNotes: vibe.top_notes || [], perfNotes: perfume.top_notes || [], weight: NOTE_CATEGORY_WEIGHTS.top },
+    { vibeNotes: vibe.heart_notes || [], perfNotes: perfume.heart_notes || [], weight: NOTE_CATEGORY_WEIGHTS.heart },
+    { vibeNotes: vibe.base_notes || [], perfNotes: perfume.base_notes || [], weight: NOTE_CATEGORY_WEIGHTS.base },
+  ]
+
+  // Same-category matching (primary signal)
+  let sameCatScore = 0
+  for (const { vibeNotes, perfNotes, weight } of categories) {
+    if (!vibeNotes.length) continue
+    let matched = 0
+    for (const vn of vibeNotes) {
+      if (perfNotes.some(pn => fuzzyNoteMatch(vn, pn))) matched++
+    }
+    sameCatScore += (matched / vibeNotes.length) * weight
+  }
+
+  // Cross-category matching (bonus — a note in the "wrong" tier is still relevant)
+  const allVibeNotes = [...(vibe.top_notes || []), ...(vibe.heart_notes || []), ...(vibe.base_notes || [])]
+  const allPerfNotes = [...(perfume.top_notes || []), ...(perfume.heart_notes || []), ...(perfume.base_notes || [])]
+  let crossMatches = 0
+  for (const vn of allVibeNotes) {
+    if (allPerfNotes.some(pn => fuzzyNoteMatch(vn, pn))) crossMatches++
+  }
+  const crossScore = allVibeNotes.length > 0 ? crossMatches / allVibeNotes.length : 0
+
+  // Blend: 75% same-category precision, 25% cross-category recall
+  return sameCatScore * 0.75 + crossScore * 0.25
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { vibe }: { vibe: VibeAnalysis } = await request.json()
@@ -44,11 +92,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
 
-    // Fetch only the columns needed for scoring — skip notes, url, country etc.
-    // This dramatically reduces payload size when the dataset is large.
+    // Fetch columns needed for hybrid scoring (accords + notes)
     const { data: perfumes, error } = await supabase
       .from('perfumes')
-      .select('id, name, brand, rating, votes, accords, is_loreal')
+      .select('id, name, brand, rating, votes, accords, is_loreal, top_notes, heart_notes, base_notes')
       .overlaps('accords', vibe.accords)
       .not('accords', 'eq', '{}')
       .gte('votes', 10)
@@ -58,10 +105,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ recommendations: [], layers: [] })
     }
 
-    // Score each perfume
+    // Hybrid scoring: 65% notes + 35% accords + popularity boost
     const scored = perfumes.map(perfume => {
       const perfumeAccords: string[] = perfume.accords || []
 
+      // Accord-based score (35% of hybrid)
       let accordScore = 0
       vibe.accords.forEach((vibeAccord, i) => {
         if (perfumeAccords.includes(vibeAccord)) {
@@ -69,12 +117,18 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      // Note-based score (65% of hybrid)
+      const noteScore = computeNoteScore(vibe, perfume)
+
+      // Combined hybrid score
+      const hybridScore = noteScore * NOTE_WEIGHT + accordScore * ACCORD_WEIGHT
+
       const votes = perfume.votes ?? 0
       const rating = perfume.rating ?? 0
       const confidence = Math.min(votes / MIN_VOTES_FOR_CONFIDENCE, 1)
       const popularityBoost = (rating / 5) * confidence * 0.20
 
-      let score = accordScore + popularityBoost
+      let score = hybridScore + popularityBoost
       if (LOREAL_BIAS && perfume.is_loreal) score *= 1.2
 
       const matched = perfumeAccords.filter((a: string) => vibe.accords.includes(a))
@@ -104,7 +158,7 @@ export async function POST(request: NextRequest) {
       topPicks = scored.slice(0, 5)
     }
 
-    // Hydrate the final 5 with full data (notes, url, etc.) in one small query
+    // Hydrate the final 5 with full data (url, country, etc.) in one small query
     const topIds = topPicks.map(p => p.id)
     const { data: fullPerfumes, error: fullError } = await supabase
       .from('perfumes')
@@ -141,7 +195,11 @@ export async function POST(request: NextRequest) {
 function generateMatchReason(name: string, brand: string, matched: string[], vibe: VibeAnalysis): string {
   const moodWord = vibe.mood?.[0] || 'evocative'
   const themeWord = vibe.themes?.[0] || 'refined'
+  const aesthetic = vibe.core_aesthetic || ''
   const accordList = matched.slice(0, 2).join(' and ')
+  if (aesthetic) {
+    return `Its ${accordList} character captures the ${aesthetic} energy — ${moodWord} and ${themeWord}, just like your board.`
+  }
   return `Its ${accordList} character mirrors the ${moodWord}, ${themeWord} energy of your board.`
 }
 

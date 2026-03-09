@@ -22,8 +22,12 @@ export interface VibeAnalysis {
   themes: string[]
   textures: string[]
   accords: string[]
+  top_notes: string[]
+  heart_notes: string[]
+  base_notes: string[]
   intensity: 'light' | 'moderate' | 'intense'
   vibe_summary: string
+  core_aesthetic: string
 }
 
 export interface LayeringPairing {

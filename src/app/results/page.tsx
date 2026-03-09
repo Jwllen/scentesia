@@ -407,7 +407,7 @@ function PerfumeCarousel({
                 className={`glass-card rounded-2xl overflow-hidden cursor-pointer ${
                   isBestMatch ? 'border-amber-400/50 gold-pulse' : ''
                 }`}
-                style={{ boxShadow: shadow, background: 'rgba(0,0,0,0.40)' }}
+                style={{ boxShadow: shadow, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
               >
                 {/* Best Match badge */}
                 {isBestMatch && (
@@ -560,6 +560,9 @@ export default function ResultsPage() {
         <h2 className="font-expanded text-white text-lg tracking-[0.2em] uppercase mb-3">
           Your Vibe
         </h2>
+        {vibe.core_aesthetic && (
+          <p className="text-brand-teal text-base tracking-[0.2em] uppercase mb-2">{vibe.core_aesthetic}</p>
+        )}
         <h1 className="font-expanded text-lg sm:text-2xl md:text-3xl font-light text-white leading-snug mb-5">
           &ldquo;{vibe.vibe_summary}&rdquo;
         </h1>
