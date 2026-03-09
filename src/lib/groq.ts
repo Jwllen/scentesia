@@ -2,7 +2,7 @@ import type { VibeAnalysis } from '@/types'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
-const MAX_IMAGES_FOR_DEEP = 6
+const MAX_IMAGES_FOR_DEEP = 4
 
 /* ── Per-image deep analysis type ──────────────────────────────────── */
 
@@ -157,17 +157,22 @@ async function callGroq(
       ],
       response_format: { type: 'json_object' },
       temperature: 0.7,
-      max_tokens: 2048,
+      max_tokens: 4096,
     }),
   })
 
   if (!response.ok) {
     const err = await response.text()
+    console.error(`[groq] API error ${response.status}: ${err}`)
     throw new Error(`Groq API error ${response.status}: ${err}`)
   }
 
   const data = await response.json()
-  return data.choices?.[0]?.message?.content?.trim() || ''
+  const content = data.choices?.[0]?.message?.content?.trim() || ''
+  if (!content) {
+    console.error('[groq] Empty response from model:', JSON.stringify(data))
+  }
+  return content
 }
 
 /* ── Pass 1: Per-image deep analysis ───────────────────────────────── */
