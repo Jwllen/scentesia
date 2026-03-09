@@ -114,7 +114,17 @@ Return ONLY valid JSON with this exact schema:
 /* ── Helpers ────────────────────────────────────────────────────────── */
 
 async function urlToBase64(url: string): Promise<{ data: string; mimeType: string }> {
-  const res = await fetch(url)
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      'Accept': 'image/*,*/*',
+    },
+    redirect: 'follow',
+  })
+  if (!res.ok) {
+    console.error(`[groq] Failed to fetch image ${url}: ${res.status}`)
+    throw new Error(`Failed to fetch image: ${res.status}`)
+  }
   const buffer = await res.arrayBuffer()
   const contentType = res.headers.get('content-type') || 'image/jpeg'
   const mimeType = contentType.split(';')[0]
