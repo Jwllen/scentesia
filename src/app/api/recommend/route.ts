@@ -92,8 +92,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No vibe data provided' }, { status: 400 })
     }
 
-    // Normalize accords to lowercase (DB stores lowercase, AI may return capitalized)
+    // Normalize to lowercase (DB stores lowercase, AI may return capitalized)
     const normalizedAccords = vibe.accords.map(a => a.toLowerCase().trim())
+    const normalizedVibe = {
+      ...vibe,
+      top_notes: (vibe.top_notes || []).map(n => n.toLowerCase().trim()),
+      heart_notes: (vibe.heart_notes || []).map(n => n.toLowerCase().trim()),
+      base_notes: (vibe.base_notes || []).map(n => n.toLowerCase().trim()),
+    }
 
     const supabase = createSupabaseServiceClient()
 
@@ -139,7 +145,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Note-based score (65% of hybrid)
-      const noteScore = computeNoteScore(vibe, perfume)
+      const noteScore = computeNoteScore(normalizedVibe, perfume)
 
       // Combined hybrid score
       const hybridScore = noteScore * NOTE_WEIGHT + accordScore * ACCORD_WEIGHT
@@ -147,7 +153,7 @@ export async function POST(request: NextRequest) {
       const votes = perfume.votes ?? 0
       const rating = perfume.rating ?? 0
       const confidence = Math.min(votes / MIN_VOTES_FOR_CONFIDENCE, 1)
-      const popularityBoost = (rating / 5) * confidence * 0.20
+      const popularityBoost = (rating / 5) * confidence * 0.08
 
       let score = hybridScore + popularityBoost
       if (LOREAL_BIAS && perfume.is_loreal) score *= 1.2
@@ -166,6 +172,10 @@ export async function POST(request: NextRequest) {
     })
 
     scored.sort((a, b) => b.match_score - a.match_score)
+
+    console.log(`[recommend] pool: ${perfumes.length} perfumes, accords: [${normalizedAccords.join(', ')}]`)
+    console.log(`[recommend] top 10:`, scored.slice(0, 10).map(s => `${s.name} (${s.brand}) ${s.match_score}% L=${s.is_loreal}`))
+    console.log(`[recommend] vibe notes: top=[${normalizedVibe.top_notes}] heart=[${normalizedVibe.heart_notes}] base=[${normalizedVibe.base_notes}]`)
 
     let topPicks: typeof scored
 

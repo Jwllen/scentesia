@@ -36,7 +36,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={`${archivo.variable} ${dmSans.variable} antialiased bg-background text-white`} suppressHydrationWarning>
+      <body className={`${archivo.variable} ${dmSans.variable} antialiased bg-background text-white overflow-x-hidden`} suppressHydrationWarning>
         <OrganicBackground />
         <MistProvider>
           {children}
