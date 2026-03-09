@@ -98,12 +98,27 @@ export async function POST(request: NextRequest) {
     const supabase = createSupabaseServiceClient()
 
     // Fetch columns needed for hybrid scoring (accords + notes)
-    const { data: perfumes, error } = await supabase
-      .from('perfumes')
-      .select('id, name, brand, rating, votes, accords, is_loreal, top_notes, heart_notes, base_notes')
-      .overlaps('accords', normalizedAccords)
-      .not('accords', 'eq', '{}')
-      .gte('votes', 10)
+    // Fetch ALL matching perfumes (Supabase defaults to 1000 rows).
+    // We paginate in chunks of 5000 to score the full candidate pool.
+    let allPerfumes: typeof perfumes = []
+    let page = 0
+    const PAGE_SIZE = 5000
+    while (true) {
+      const { data: batch, error: batchError } = await supabase
+        .from('perfumes')
+        .select('id, name, brand, rating, votes, accords, is_loreal, top_notes, heart_notes, base_notes')
+        .overlaps('accords', normalizedAccords)
+        .not('accords', 'eq', '{}')
+        .gte('votes', 10)
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+      if (batchError) throw batchError
+      if (!batch?.length) break
+      allPerfumes = allPerfumes.concat(batch)
+      if (batch.length < PAGE_SIZE) break
+      page++
+    }
+    const perfumes = allPerfumes
+    const error = null
 
     if (error) throw error
     if (!perfumes?.length) {
