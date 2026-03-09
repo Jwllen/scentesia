@@ -1,7 +1,7 @@
 import type { VibeAnalysis } from '@/types'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+const MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct'
 const MAX_IMAGES_FOR_DEEP = 6
 
 /* ── Per-image deep analysis type ──────────────────────────────────── */
