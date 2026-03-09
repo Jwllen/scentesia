@@ -422,7 +422,7 @@ export default function BuildPage() {
             <>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="btn-glass"
+                className="btn-glass text-xs sm:text-base !px-2 !py-1 sm:!px-6 sm:!py-2.5 !rounded-lg sm:!rounded-xl"
               >
                 + Upload yours
               </button>
