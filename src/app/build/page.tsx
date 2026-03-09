@@ -196,7 +196,25 @@ export default function BuildPage() {
       const resolvedUrls = tabUrls.map(u =>
         u.startsWith('/') ? `${window.location.origin}${u}` : u
       )
-      const allImages = [...uploadedBase64, ...resolvedUrls]
+
+      // Convert external URLs to base64 on client to avoid server-side fetch issues
+      const toBase64 = async (url: string): Promise<string> => {
+        if (url.startsWith('data:')) return url
+        try {
+          const res = await fetch(url)
+          const blob = await res.blob()
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+        } catch {
+          return url // fallback to URL if conversion fails
+        }
+      }
+      const convertedUrls = await Promise.all(resolvedUrls.map(toBase64))
+      const allImages = [...uploadedBase64, ...convertedUrls]
 
       const analyzeRes = await fetch('/api/analyze', {
         method: 'POST',
