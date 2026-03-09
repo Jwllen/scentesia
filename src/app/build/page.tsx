@@ -376,12 +376,12 @@ export default function BuildPage() {
               We&apos;ll translate it into fragrance.
             </p>
             {/* Tab toggle */}
-            <div className="flex gap-1 mt-6 glass-card rounded-xl p-1 w-full overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex gap-0.5 sm:gap-1 mt-6 glass-card rounded-xl p-1 w-full">
               {(['curated', 'pinterest', 'instagram', 'tiktok'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => switchTab(tab)}
-                  className={`shrink-0 text-base tracking-[0.15em] sm:tracking-[0.25em] uppercase px-3 sm:px-4 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
+                  className={`flex-1 text-sm sm:text-base tracking-[0.08em] sm:tracking-[0.25em] uppercase px-1.5 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
                     activeTab === tab
                       ? 'text-white bg-brand-teal/30'
                       : 'text-white/50 hover:text-white/70'

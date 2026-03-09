@@ -522,16 +522,21 @@ export default function ResultsPage() {
       const data = JSON.parse(raw)
       setVibe(data.vibe)
       // Reorder into podium: [#4, #2, #1, #3, #5] — best match at center (index 2)
-      const recs: PerfumeRecommendation[] = data.recommendations || []
-      if (recs.length === 5) {
+      const recs: PerfumeRecommendation[] = (data.recommendations || []).filter(Boolean)
+      if (recs.length === 0) {
+        setRecommendations([])
+      } else if (recs.length === 5) {
         setRecommendations([recs[3], recs[1], recs[0], recs[2], recs[4]])
-      } else {
-        // For other counts, place best in the middle
+      } else if (recs.length >= 3) {
+        // Place best in the middle
         const mid = Math.floor(recs.length / 2)
-        const reordered = [...recs]
-        reordered.splice(0, 1) // remove best
-        reordered.splice(mid, 0, recs[0]) // insert at center
+        const reordered = recs.slice(1)
+        reordered.splice(mid, 0, recs[0])
         setRecommendations(reordered)
+        setCarouselIndex(mid)
+      } else {
+        setRecommendations(recs)
+        setCarouselIndex(0)
       }
     } catch {
       router.push('/build')
