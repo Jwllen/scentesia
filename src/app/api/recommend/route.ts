@@ -100,7 +100,8 @@ export async function POST(request: NextRequest) {
     // Fetch columns needed for hybrid scoring (accords + notes)
     // Fetch ALL matching perfumes (Supabase defaults to 1000 rows).
     // We paginate in chunks of 5000 to score the full candidate pool.
-    let allPerfumes: typeof perfumes = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let allPerfumes: any[] = []
     let page = 0
     const PAGE_SIZE = 5000
     while (true) {
