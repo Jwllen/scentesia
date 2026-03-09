@@ -122,14 +122,6 @@
   cursor: pointer;
 }
 
-@media (max-width: 639px) {
-  .btn-glass-mobile {
-    padding: 0.375rem 0.75rem !important;
-    font-size: 12px !important;
-    letter-spacing: 0.15em !important;
-    border-radius: 0.5rem !important;
-  }
-}
 
 .btn-glass:hover {
   background: rgba(255,255,255,0.1);
