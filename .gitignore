@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Licensed assets: keep the directories and their notes, not the media
+public/curated/*
+!public/curated/README.md
+public/tutorials/*
+!public/tutorials/README.md

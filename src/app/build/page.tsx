@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useMist } from '@/components/MistEffect'
 import { Logo } from '@/components/Logo'
 
-const CURATED_COUNT = 138
+// Curated imagery and the tutorial clips are licensed assets and are not part
+// of this repository. Point NEXT_PUBLIC_ASSET_BASE_URL at a bucket or CDN
+// holding them, or drop your own into public/ and leave it unset.
+const ASSET_BASE = process.env.NEXT_PUBLIC_ASSET_BASE_URL || ''
+const CURATED_COUNT = Number(process.env.NEXT_PUBLIC_CURATED_COUNT || 0)
 const CURATED_IMAGES = Array.from({ length: CURATED_COUNT }, (_, i) => ({
   id: `c${i + 1}`,
-  url: `/curated/c${i + 1}.jpg`,
+  url: `${ASSET_BASE}/curated/c${i + 1}.jpg`,
 }))
 
 const MAX_IMAGES = 5
@@ -506,7 +510,7 @@ export default function BuildPage() {
               {!pinterestLoading && (
                 <div className="mt-6 flex justify-center">
                   <video
-                    src="/tutorials/pinterest-tutorial.mp4"
+                    src={`${ASSET_BASE}/tutorials/pinterest-tutorial.mp4`}
                     autoPlay
                     loop
                     muted
@@ -588,7 +592,7 @@ export default function BuildPage() {
               {!instagramLoading && (
                 <div className="mt-6 flex justify-center">
                   <video
-                    src="/tutorials/instagram-tutorial.mp4"
+                    src={`${ASSET_BASE}/tutorials/instagram-tutorial.mp4`}
                     autoPlay
                     loop
                     muted
@@ -728,7 +732,7 @@ export default function BuildPage() {
               {!tiktokLoading && (
                 <div className="mt-6 flex justify-center">
                   <video
-                    src="/tutorials/tiktok-tutorial.mp4"
+                    src={`${ASSET_BASE}/tutorials/tiktok-tutorial.mp4`}
                     autoPlay
                     loop
                     muted
